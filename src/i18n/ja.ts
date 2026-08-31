@@ -11,9 +11,9 @@ export const ja = {
 
   compose: {
     headlineBefore: '読みたい文章を貼ると、',
-    headlineAccent: '一目で読める大きさ',
-    headlineAfter: 'に区切ります',
-    lede: '日本語と英語に対応。本文はこの端末の中だけで処理され、どこへも送信されません。',
+    headlineAccent: '目を一箇所に置いたまま',
+    headlineAfter: '読めます',
+    lede: '一目で読める大きさに区切って、1枚ずつ表示します。日本語と英語に対応。本文はこの端末の中だけで処理され、どこへも送信されません。',
     tooLongTitle: '長すぎます',
     tooLong: (limit: number) =>
       `${limit.toLocaleString()} 字までにしてください。分けて読むと快適です。`,
