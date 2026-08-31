@@ -52,13 +52,3 @@ bun run test:browser # 実ブラウザで、全カードが幅に収まること
 ```
 
 `test:browser` は 4 つの画面幅 × 5 つの設定でカードを全部送り、テキストの矩形がカードの内側に収まっているかを直接測る。`white-space: nowrap` のカードは親からはみ出しても `scrollWidth` と `clientWidth` が一致するため、その比較では溢れを検出できない。
-
-## デプロイ
-
-Cloudflare Workers の静的アセットとして配信する。サーバー側の処理が無いので Worker スクリプトは持たない。
-
-```sh
-bun run deploy
-```
-
-初回は `wrangler login` が必要。
