@@ -274,6 +274,7 @@ export default function App() {
                   letterSpacing={settings.letterSpacing}
                   dim={settings.dimSurround}
                   idle={!started}
+                  contextSentences={settings.contextSentences}
                   summaryProgress={summaryProgress}
                   onSummaryFocus={(on) => dispatch({ type: 'SUMMARY_FOCUS', on })}
                   onSummaryScroll={(on) => dispatch({ type: 'SUMMARY_SCROLL', on })}

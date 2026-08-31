@@ -139,7 +139,7 @@ export function SettingsDrawer({ open, settings, onChange, onClose }: Props) {
             読み終わりの補助」の順。速度はメイン画面にも常時あるので、ここでは
             数値で正確に入れたいときの控えとして中ほどに置く。 */}
         {/* 先頭のグループの罫線はヘッダーの境界と二重になるので落とす */}
-        <div className="grid gap-6 p-5 [&>section:first-of-type]:border-none [&>section:first-of-type]:pt-0">
+        <div className="flex flex-1 flex-col gap-6 p-5 [&>section:first-of-type]:border-none [&>section:first-of-type]:pt-0">
           <Group
             title="カードの読みやすさ"
             note="文字サイズ・文字間隔・知覚スパンを変えると、カードを組み直します。読んでいた位置はそのままです。"
@@ -269,7 +269,7 @@ export function SettingsDrawer({ open, settings, onChange, onClose }: Props) {
             />
           </Group>
 
-          <Group title="読み終わりと集中">
+          <Group title="読み返しと集中">
             <div className="kg-switch-row">
               <Switch
                 label="文を読み終えたら文全体を表示する"
@@ -289,6 +289,16 @@ export function SettingsDrawer({ open, settings, onChange, onClose }: Props) {
               onChange={(summaryRatio) => onChange({ summaryRatio })}
               note="その文を読む時間に対する割合です。長い文ほど表示時間も長くなります。"
             />
+            <Slider
+              label="文脈に出す前後の文"
+              value={settings.contextSentences}
+              display={`前後 ${settings.contextSentences} 文`}
+              min={2}
+              max={40}
+              step={2}
+              onChange={(contextSentences) => onChange({ contextSentences })}
+              note="停止したときに出る文脈で、前後それぞれ何文まで並べるかです。"
+            />
             <div className="kg-switch-row">
               <Switch
                 label="周辺を暗くする"
@@ -299,7 +309,11 @@ export function SettingsDrawer({ open, settings, onChange, onClose }: Props) {
             </div>
           </Group>
 
-          <div className="flex justify-end border-t pt-4" style={{ borderColor: 'var(--kg-hair)' }}>
+          {/* 設定が画面より短くてもパネルの右下に張り付くように mt-auto */}
+          <div
+            className="mt-auto flex justify-end border-t pt-4"
+            style={{ borderColor: 'var(--kg-hair)' }}
+          >
             <Button variant="secondary" onClick={() => onChange(DEFAULTS)}>
               初期値に戻す
             </Button>

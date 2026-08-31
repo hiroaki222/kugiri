@@ -14,16 +14,14 @@ type Props = {
   dim: boolean
   /** まだ一度も再生していない状態。カードを沈めて始め方を出す。 */
   idle: boolean
+  /** 文脈に出す前後の文の数。論文だと数段落さかのぼらないと話が繋がらない。 */
+  contextSentences: number
   summaryProgress: number | null
   onSummaryFocus: (on: boolean) => void
   onSummaryScroll: (on: boolean) => void
   stageRef: React.RefObject<HTMLDivElement | null>
 }
 
-/** 現在の文だけでは「その前に何を読んだか」が分からず、戻る理由の多くを解決できない。
- *  論文では数段落さかのぼらないと話が繋がらないこともあるので広めに取る。
- *  スクロールする領域なので、多く出しても現在の文の見つけやすさは変わらない。 */
-const CONTEXT_SENTENCES = 12
 /** 前後の文は手がかりなので、長すぎるものは端を落とす。落とすのは現在の文から
  *  遠いほう (前の文は末尾、後ろの文は冒頭が効く)。現在の文だけは切らない。 */
 const NEIGHBOUR_MAX = 400
@@ -37,9 +35,10 @@ function contextBlocks(
   sentences: { start: number; end: number }[],
   card: Card,
   sentenceId: number,
+  span: number,
 ) {
-  const lo = Math.max(0, sentenceId - CONTEXT_SENTENCES)
-  const hi = Math.min(sentences.length - 1, sentenceId + CONTEXT_SENTENCES)
+  const lo = Math.max(0, sentenceId - span)
+  const hi = Math.min(sentences.length - 1, sentenceId + span)
   const blocks: ContextBlock[] = []
   for (let i = lo; i <= hi; i++) {
     const s = sentences[i]
@@ -230,7 +229,7 @@ export function CardStage(props: Props) {
                 現在の文を中央まで持ってこられない。 */}
             <div className="mx-auto grid max-w-[42em] gap-7 py-[50cqh] text-[17px] leading-[1.95]">
               {(() => {
-                const c = contextBlocks(source, sentences, card, card.sentenceId)
+                const c = contextBlocks(source, sentences, card, card.sentenceId, props.contextSentences)
                 return [
                   c.head ? <Ellipsis key="head" /> : null,
                   ...c.blocks.map((b) =>

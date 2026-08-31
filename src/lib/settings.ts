@@ -13,6 +13,7 @@ export const DEFAULTS = {
   summaryOn: false,
   summaryRatio: 0.4,
   reviewStrength: 1,
+  contextSentences: 20,
   dimSurround: false,
 }
 export type Settings = typeof DEFAULTS
@@ -32,6 +33,7 @@ const schema = z.object({
   summaryOn: z.boolean().catch(DEFAULTS.summaryOn),
   summaryRatio: clamped(0.1, 1.2, DEFAULTS.summaryRatio),
   reviewStrength: clamped(0, 2, DEFAULTS.reviewStrength),
+  contextSentences: clamped(2, 40, DEFAULTS.contextSentences),
   dimSurround: z.boolean().catch(DEFAULTS.dimSurround),
 })
 
