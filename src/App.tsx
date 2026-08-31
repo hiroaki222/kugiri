@@ -285,7 +285,6 @@ export default function App() {
                   paragraphs={ready.paragraphs}
                   sourceLength={ready.source.length}
                   offset={offset}
-                  onTogglePlay={() => dispatch({ type: 'PLAY' })}
                   onSeekOffset={(o) => {
                     const ci = ready.cards.findIndex((c) => o < c.sourceEnd)
                     seekStep(findStepForCard(ci < 0 ? ready.cards.length - 1 : ci), 'slider')

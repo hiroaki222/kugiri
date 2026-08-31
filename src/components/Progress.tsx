@@ -10,12 +10,11 @@ type Props = {
   onSeekOffset: (offset: number) => void
   /** バーにフォーカスがあるときも Space で再生を切り替えられるようにする。
    *  data-hotkeys-off でグローバルのキー処理から外しているため、ここで受ける。 */
-  onTogglePlay: () => void
 }
 
 /** Kumo に該当コンポーネントが無いので canvas で自前描画する。
  *  Meter はクリックで移動できず、カード単位の区切りも描けない。 */
-export function Progress({ cards, paragraphs, sourceLength, offset, onSeekOffset, onTogglePlay }: Props) {
+export function Progress({ cards, paragraphs, sourceLength, offset, onSeekOffset }: Props) {
   const ref = useRef<HTMLCanvasElement>(null)
   const pct = sourceLength > 0 ? Math.min(1, offset / sourceLength) : 0
 
@@ -104,8 +103,9 @@ export function Progress({ cards, paragraphs, sourceLength, offset, onSeekOffset
         if (e.buttons === 1) seekAt(e.clientX)
       }}
       onKeyDown={(e) => {
+        // Space はここで扱わない。window 側のホットキーも同じ native イベントで
+        // 発火するので、両方が再生を切り替えると往復して何も起きなくなる。
         const map: Record<string, () => void> = {
-          ' ': onTogglePlay,
           ArrowLeft: () => step(-1),
           ArrowRight: () => step(1),
           PageDown: () => step(5),
