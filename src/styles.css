@@ -100,6 +100,14 @@ body {
   font-feature-settings: "palt";
 }
 
+/* 日本語は文節で折り返す。既定だと「目安で / す。」のように語の途中で切れて読みにくい。
+   word-break: auto-phrase は BudouX と同じ発想の折り返しで、未対応環境では無視される。 */
+.kg-jp-text {
+  word-break: auto-phrase;
+  line-break: strict;
+  overflow-wrap: anywhere;
+}
+
 /* Kumo の Switch は grid-cols-[auto_1fr] でラベルが auto、スイッチが 1fr なので
    スイッチがラベルのすぐ横に来る。設定 UI の慣習に合わせて右端固定にする。
    Kumo 側の has-[...] と同じ詳細度で当てるため :has() を使う (!important は使わない)。 */

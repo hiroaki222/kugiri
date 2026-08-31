@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Banner, Button, Text } from '@cloudflare/kumo'
-import { ArrowUUpLeftIcon, GearIcon, PlayIcon, StopIcon, CaretLeftIcon, CaretRightIcon, QuestionIcon } from '@phosphor-icons/react'
+import { ArrowUUpLeftIcon, GearIcon, PlayIcon, StopIcon, CaretLeftIcon, CaretRightIcon, QuestionIcon, MinusIcon, PlusIcon } from '@phosphor-icons/react'
 import { CardStage } from '@/components/CardStage'
 import { HelpDialog } from '@/components/HelpDialog'
 import { InputPane } from '@/components/InputPane'
@@ -58,7 +58,14 @@ export default function App() {
   }, [settings])
 
   useEffect(() => {
-    document.documentElement.dataset.bg = settings.bg
+    const el = document.documentElement
+    el.dataset.bg = settings.bg
+    // Kumo は light-dark() で色を解決し、モードは data-mode で決まる。
+    // トークンを上書きするだけではコンポーネント側 (Button, Text, Switch) が
+    // 明色のままになり、暗い背景で文字が潰れる。
+    const dark = settings.bg === 'navy' || settings.bg === 'sumi'
+    el.dataset.mode = dark ? 'dark' : 'light'
+    el.style.colorScheme = dark ? 'dark' : 'light'
   }, [settings.bg])
 
   // 書体クラスと deck は同じ commit で適用される (deck が ready になった時点)
@@ -261,19 +268,30 @@ export default function App() {
                 className="flex flex-none flex-wrap items-center justify-between gap-3 border-t px-5 py-2.5 text-[11px] tabular-nums"
                 style={{ background: 'var(--kg-panel)', borderColor: 'var(--kg-hair)', color: 'var(--kg-muted)' }}
               >
-                <span className="flex items-center gap-3">
-                  <b style={{ color: 'var(--kg-ink)' }}>{pct}%</b>
-                  <label className="flex items-center gap-2">
+                <span className="flex flex-1 items-center gap-3">
+                  <b className="w-10" style={{ color: 'var(--kg-ink)' }}>{pct}%</b>
+                  <span className="flex min-w-0 flex-1 items-center gap-2">
+                    <Button
+                      variant="ghost" shape="square" icon={MinusIcon} aria-label="速度を下げる"
+                      onClick={() => patch({ cpm: Math.max(300, settings.cpm - 50) })}
+                    />
                     <input
                       type="range" min={300} max={4000} step={50} value={settings.cpm}
                       aria-label="読み上げ速度"
                       onChange={(e) => patch({ cpm: Number(e.target.value) })}
-                      className="w-28 cursor-pointer" style={{ accentColor: 'var(--kg-mark)' }}
+                      className="min-w-0 flex-1 cursor-pointer"
+                      style={{ accentColor: 'var(--kg-mark)' }}
                       data-hotkeys-off
                     />
-                    <span className="tabular-nums">{settings.cpm} cpm</span>
-                  </label>
-                  {pb.scrollBlocked && <span style={{ color: 'var(--kg-mark)' }}>Space で次へ</span>}
+                    <Button
+                      variant="ghost" shape="square" icon={PlusIcon} aria-label="速度を上げる"
+                      onClick={() => patch({ cpm: Math.min(4000, settings.cpm + 50) })}
+                    />
+                    <span className="w-[68px] shrink-0 tabular-nums">{settings.cpm} cpm</span>
+                  </span>
+                  {pb.scrollBlocked && (
+                    <span className="shrink-0" style={{ color: 'var(--kg-mark)' }}>Space で次へ</span>
+                  )}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <Button variant="ghost" shape="square" icon={CaretLeftIcon} aria-label="前へ"

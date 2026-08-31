@@ -1,4 +1,4 @@
-import { Button, Select, Switch, Text } from '@cloudflare/kumo'
+import { Button, Switch, Text } from '@cloudflare/kumo'
 import { XIcon } from '@phosphor-icons/react'
 import { BACKGROUNDS, type Settings } from '@/lib/settings'
 
@@ -53,7 +53,7 @@ function Slider(props: {
         style={{ accentColor: 'var(--kg-mark)' }}
       />
       {props.note && (
-        <p className="m-0 text-[11.5px] leading-relaxed" style={{ color: 'var(--kg-muted)' }}>
+        <p className="kg-jp-text m-0 text-[11.5px] leading-relaxed" style={{ color: 'var(--kg-muted)' }}>
           {props.note}
         </p>
       )}
@@ -86,7 +86,7 @@ export function SettingsDrawer({ open, settings, onChange, onClose }: Props) {
         aria-label="詳細設定"
         aria-hidden={!open}
         data-hotkeys-off
-        className="fixed inset-y-0 right-0 z-30 flex w-[min(400px,90vw)] flex-col overflow-y-auto border-l transition-transform duration-200"
+        className="fixed inset-y-0 right-0 z-30 flex w-[min(460px,92vw)] flex-col overflow-y-auto border-l transition-transform duration-200"
         style={{
           background: 'var(--kg-panel)',
           borderColor: 'var(--kg-hair)',
@@ -204,25 +204,53 @@ export function SettingsDrawer({ open, settings, onChange, onClose }: Props) {
                 onCheckedChange={(fixPdfWrap: boolean) => onChange({ fixPdfWrap })}
               />
             </div>
-            <p className="m-0 text-[11.5px] leading-relaxed" style={{ color: 'var(--kg-muted)' }}>
+            <p className="kg-jp-text m-0 text-[11.5px] leading-relaxed" style={{ color: 'var(--kg-muted)' }}>
               論文などで文の途中に入る改行をつなぎます。詩や箇条書きでは意味が変わるので、
               必要なときだけ入れてください。
             </p>
           </Group>
 
           <Group title="速度">
-            <Select
-              label="読み上げ速度"
-              value={String(settings.cpm)}
-              onValueChange={(v: string | null) => onChange({ cpm: Number(v ?? 1200) })}
-              items={{
-                '600': 'ゆっくり (600)',
-                '900': 'やや遅い (900)',
-                '1200': '標準 (1200)',
-                '1800': '速い (1800)',
-                '2600': 'かなり速い (2600)',
-              }}
-            />
+            <div className="grid gap-2">
+              <div className="flex items-baseline justify-between gap-3">
+                <label htmlFor="set-cpm" className="text-xs" style={{ color: 'var(--kg-muted)' }}>
+                  読み上げ速度
+                </label>
+                <span className="flex items-baseline gap-1.5">
+                  {/* 数値でも直接入れられるようにする。スライダーだけだと
+                      300-4000 の範囲を細かく合わせられない。 */}
+                  <input
+                    type="number"
+                    min={300}
+                    max={4000}
+                    step={50}
+                    value={settings.cpm}
+                    aria-label="読み上げ速度（1分あたりの文字量）"
+                    onChange={(e) => {
+                      const v = Number(e.target.value)
+                      if (Number.isFinite(v)) onChange({ cpm: Math.min(4000, Math.max(300, v)) })
+                    }}
+                    className="w-20 rounded-sm border px-2 py-1 text-right text-xs tabular-nums"
+                    style={{ borderColor: 'var(--kg-hair)', background: 'var(--kg-paper)', color: 'var(--kg-ink)' }}
+                  />
+                  <span className="text-xs" style={{ color: 'var(--kg-muted)' }}>cpm</span>
+                </span>
+              </div>
+              <input
+                id="set-cpm"
+                type="range"
+                min={300}
+                max={4000}
+                step={50}
+                value={settings.cpm}
+                onChange={(e) => onChange({ cpm: Number(e.target.value) })}
+                className="w-full cursor-pointer"
+                style={{ accentColor: 'var(--kg-mark)' }}
+              />
+              <p className="kg-jp-text m-0 text-[11.5px] leading-relaxed" style={{ color: 'var(--kg-muted)' }}>
+                1分あたりに送る文字量。全角1字を2、半角1字を1として数えます。
+              </p>
+            </div>
           </Group>
         </div>
       </aside>
