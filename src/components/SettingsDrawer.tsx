@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Button, Popover, Switch, Text } from '@cloudflare/kumo'
 import { CheckIcon, XIcon } from '@phosphor-icons/react'
 import { t } from '@/i18n'
@@ -182,6 +183,19 @@ function ResetButton({ onReset }: { onReset: () => void }) {
 }
 
 function SpeedRow({ cpm, onChange }: { cpm: number; onChange: (cpm: number) => void }) {
+  // Clamping on every keystroke makes the field impossible to type in: the
+  // first digit of 500 is 5, which is below the minimum and is replaced by it
+  // before the second digit arrives. What is being typed is held as text and
+  // only becomes a number when the field is left or Enter is pressed.
+  const [typed, setTyped] = useState<string | null>(null)
+
+  const commit = () => {
+    if (typed === null) return
+    const v = Number(typed)
+    if (typed.trim() !== '' && Number.isFinite(v)) onChange(clampCpm(v))
+    setTyped(null)
+  }
+
   return (
     <Row label={t.settings.pace.speed} htmlFor="set-cpm" note={t.settings.pace.speedNote}>
       <div className="flex items-center gap-3">
@@ -192,7 +206,10 @@ function SpeedRow({ cpm, onChange }: { cpm: number; onChange: (cpm: number) => v
           max={CPM_MAX}
           step={50}
           value={cpm}
-          onChange={(e) => onChange(Number(e.target.value))}
+          onChange={(e) => {
+            setTyped(null)
+            onChange(Number(e.target.value))
+          }}
           className="w-full cursor-pointer"
           style={{ accentColor: 'var(--kg-mark)' }}
         />
@@ -203,11 +220,12 @@ function SpeedRow({ cpm, onChange }: { cpm: number; onChange: (cpm: number) => v
             min={CPM_MIN}
             max={CPM_MAX}
             step={50}
-            value={cpm}
+            value={typed ?? cpm}
             aria-label={t.settings.pace.speedField}
-            onChange={(e) => {
-              const v = Number(e.target.value)
-              if (Number.isFinite(v)) onChange(clampCpm(v))
+            onChange={(e) => setTyped(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') e.currentTarget.blur()
             }}
             className="w-16 rounded-sm border px-1.5 py-1 text-right text-sm font-semibold tabular-nums"
             style={{
