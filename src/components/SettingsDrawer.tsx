@@ -1,4 +1,4 @@
-import { Button, Switch, Text } from '@cloudflare/kumo'
+import { Button, Popover, Switch, Text } from '@cloudflare/kumo'
 import { CheckIcon, XIcon } from '@phosphor-icons/react'
 import { BACKGROUNDS, DEFAULTS, type Settings } from '@/lib/settings'
 
@@ -314,9 +314,28 @@ export function SettingsDrawer({ open, settings, onChange, onClose }: Props) {
             className="mt-auto flex justify-end border-t pt-4"
             style={{ borderColor: 'var(--kg-hair)' }}
           >
-            <Button variant="secondary" onClick={() => onChange(DEFAULTS)}>
-              初期値に戻す
-            </Button>
+            {/* 元に戻せない操作なので確認を挟む。画面中央のダイアログにすると
+                読書画面まで覆ってしまうので、ボタンの上に出す。 */}
+            <Popover>
+              <Popover.Trigger
+                render={<Button variant="destructive">すべて初期値に戻す</Button>}
+              />
+              <Popover.Content side="top" align="end" className="grid max-w-[19rem] gap-3">
+                <Popover.Description className="kg-jp-text m-0 text-sm leading-[1.7]">
+                  文字サイズから速度まで、この画面のすべての設定が初期値に戻ります。
+                </Popover.Description>
+                <div className="flex justify-end gap-2">
+                  <Popover.Close render={<Button variant="ghost">やめる</Button>} />
+                  <Popover.Close
+                    render={
+                      <Button variant="destructive" onClick={() => onChange(DEFAULTS)}>
+                        戻す
+                      </Button>
+                    }
+                  />
+                </div>
+              </Popover.Content>
+            </Popover>
           </div>
         </div>
       </aside>

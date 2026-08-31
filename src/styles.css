@@ -149,6 +149,9 @@ body {
    data-side を持つ popup (tooltip・popover) だけが対象で、Dialog には当たらない。 */
 [data-base-ui-portal] [role="presentation"][data-side] {
   max-width: min(23rem, var(--available-width));
+  /* body 直下に出るので、詳細設定のドロワー (z-30) より上に置かないと
+     ドロワー内から開いた popover がその裏に回ってクリックできない。 */
+  z-index: 60;
 }
 [data-base-ui-portal] [role="presentation"][data-side] [data-base-ui-focusable] {
   word-break: auto-phrase;
