@@ -236,7 +236,11 @@ export default function App() {
           value={raw}
           onChange={setRaw}
           onSample={() => setRaw(SAMPLE)}
-          onRead={() => setView('read')}
+          onRead={() => {
+            // 読み始めは常に未開始から。同じ本文をもう一度読むときも案内を出す。
+            setStartedFor(null)
+            setView('read')
+          }}
           fixPdfWrap={fixPdfWrap}
           onFixPdfWrapChange={setFixPdfWrap}
         />

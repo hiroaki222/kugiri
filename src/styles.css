@@ -160,3 +160,9 @@ body {
   align-items: center;
   gap: 0.3em;
 }
+
+/* 文脈画面。cqh を使うために自分をサイズコンテナにする
+   (現在の文を中央へ寄せるための上下の余白が、常に画面の半分になる)。 */
+.kg-context {
+  container-type: size;
+}
