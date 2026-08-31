@@ -28,6 +28,8 @@
    線と背景の明度が一致して消える。地の色に対する相対値で持つ。 */
 :root {
   --kg-guide: color-mix(in srgb, var(--kg-ink) 24%, transparent);
+  /* 全文カード・文脈画面が地の上に敷く面 */
+  --kg-overlay: color-mix(in srgb, var(--kg-paper) 96%, #000);
 }
 [data-bg="cream"] {
   --color-kumo-brand: #1b4fa0;
