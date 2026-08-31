@@ -1,5 +1,7 @@
 import { Banner, Button, Field, InputArea, Switch } from '@cloudflare/kumo'
+import { t } from '@/i18n'
 
+/** Rejected before anything is processed, so a huge paste cannot freeze the tab. */
 const RAW_LIMIT = 100_000
 
 type Props = {
@@ -7,61 +9,63 @@ type Props = {
   onChange: (v: string) => void
   onRead: () => void
   onSample: () => void
-  /** 貼り付けたテキストの性質に関する設定なので、読書中の設定ではなくここに置く。 */
-  fixPdfWrap: boolean
-  onFixPdfWrapChange: (v: boolean) => void
+  /** Belongs to the text being pasted rather than to how it is read, so it
+   *  lives here instead of in the settings drawer. */
+  unwrap: boolean
+  onUnwrapChange: (v: boolean) => void
 }
 
-export function InputPane({ value, onChange, onRead, onSample, fixPdfWrap, onFixPdfWrapChange }: Props) {
-  const len = value.trim().length
-  const tooLong = len > RAW_LIMIT
+export function InputPane({ value, onChange, onRead, onSample, unwrap, onUnwrapChange }: Props) {
+  const length = value.trim().length
+  const tooLong = length > RAW_LIMIT
 
   return (
     <main className="grid flex-1 place-items-center px-5 py-9">
       <div className="grid w-full max-w-[720px] gap-4">
         <h1 className="m-0 text-[clamp(21px,3.4vw,27px)] font-bold leading-snug text-balance">
-          読みたい文章を貼ると、<em className="not-italic" style={{ color: 'var(--kg-mark)' }}>一目で読める大きさ</em>に区切ります
+          {t.compose.headlineBefore}
+          <em className="not-italic" style={{ color: 'var(--kg-mark)' }}>
+            {t.compose.headlineAccent}
+          </em>
+          {t.compose.headlineAfter}
         </h1>
         <p className="m-0 text-sm leading-loose" style={{ color: 'var(--kg-muted)' }}>
-          日本語と英語に対応。本文はこの端末の中だけで処理され、どこへも送信されません。
+          {t.compose.lede}
         </p>
         {tooLong && (
           <Banner
             variant="alert"
-            title="長すぎます"
-            description={`${RAW_LIMIT.toLocaleString()} 字までにしてください。分けて読むと快適です。`}
+            title={t.compose.tooLongTitle}
+            description={t.compose.tooLong(RAW_LIMIT)}
           />
         )}
-        <Field label="本文" hideLabel>
+        <Field label={t.compose.bodyLabel} hideLabel>
           <InputArea
             value={value}
             onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => onChange(e.target.value)}
-            placeholder="ここに貼り付け"
+            placeholder={t.compose.placeholder}
             spellCheck={false}
             className="min-h-[230px] w-full"
           />
         </Field>
         <div className="kg-tip">
           <Switch
-            label="テキストの改行を取り除く"
-            labelTooltip="PDF などからコピーすると文の途中に残る改行をつなぎ、一文に戻します。改行そのものに意味がある詩や箇条書きでは、オフのままにしてください。"
+            label={t.compose.unwrap}
+            labelTooltip={t.compose.unwrapHelp}
             controlFirst={false}
-            checked={fixPdfWrap}
-            onCheckedChange={onFixPdfWrapChange}
+            checked={unwrap}
+            onCheckedChange={onUnwrapChange}
           />
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2.5">
-          <span
-            className="mr-auto text-[11px] tabular-nums"
-            style={{ color: 'var(--kg-muted)' }}
-          >
-            {len.toLocaleString()} 字
+          <span className="mr-auto text-[11px] tabular-nums" style={{ color: 'var(--kg-muted)' }}>
+            {t.compose.charCount(length)}
           </span>
           <Button variant="secondary" onClick={onSample}>
-            サンプルを入れる
+            {t.compose.sample}
           </Button>
-          <Button variant="primary" onClick={onRead} disabled={len === 0 || tooLong}>
-            読む
+          <Button variant="primary" onClick={onRead} disabled={length === 0 || tooLong}>
+            {t.compose.read}
           </Button>
         </div>
       </div>

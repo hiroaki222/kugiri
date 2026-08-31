@@ -1,5 +1,6 @@
 import { Button, Dialog, Text } from '@cloudflare/kumo'
 import { XIcon } from '@phosphor-icons/react'
+import { t } from '@/i18n'
 
 const Key = ({ children }: { children: React.ReactNode }) => (
   <kbd
@@ -10,17 +11,20 @@ const Key = ({ children }: { children: React.ReactNode }) => (
   </kbd>
 )
 
+const NONE = <>—</>
+
+/** Key glyphs are structure, not copy, so only the descriptions are localised. */
 const ROWS: [React.ReactNode, React.ReactNode, string][] = [
-  [<><Key>h</Key><Key>l</Key></>, <><Key>←</Key><Key>→</Key></>, '前／次のカードへ。h は長押しすると、だんだん速く巻き戻ります'],
-  [<><Key>k</Key><Key>j</Key></>, <><Key>↑</Key><Key>↓</Key></>, '前／次の文の先頭へ'],
-  [<><Key>{'{'}</Key><Key>{'}'}</Key></>, <>—</>, '前／次の段落へ'],
-  [<><Key>g</Key><Key>g</Key></>, <Key>G</Key>, '文書の先頭／末尾へ'],
-  [<Key>Space</Key>, <>—</>, '再生／停止。停止すると、今の文の全体を表示します'],
-  [<><Key>&lt;</Key><Key>&gt;</Key></>, <>—</>, '速度を下げる／上げる（Shift キーを押しながら）'],
-  [<Key>K</Key>, <>—</>, '押している間だけ、今の文の全体を表示（Shift + k）'],
-  [<><Key>Shift</Key><Key>←</Key><Key>→</Key></>, <>—</>, '長い URL などで横に収まらないカードをスクロール'],
-  [<Key>?</Key>, <Key>,</Key>, 'この画面／詳細設定'],
-  [<Key>Esc</Key>, <>—</>, '再生を止めて、開いている表示を閉じる'],
+  [<><Key>h</Key><Key>l</Key></>, <><Key>←</Key><Key>→</Key></>, t.help.cardStep],
+  [<><Key>k</Key><Key>j</Key></>, <><Key>↑</Key><Key>↓</Key></>, t.help.sentenceStep],
+  [<><Key>{'{'}</Key><Key>{'}'}</Key></>, NONE, t.help.paragraphStep],
+  [<><Key>g</Key><Key>g</Key></>, <Key>G</Key>, t.help.edges],
+  [<Key>Space</Key>, NONE, t.help.play],
+  [<><Key>&lt;</Key><Key>&gt;</Key></>, NONE, t.help.speed],
+  [<Key>K</Key>, NONE, t.help.context],
+  [<><Key>Shift</Key><Key>←</Key><Key>→</Key></>, NONE, t.help.scroll],
+  [<Key>?</Key>, <Key>,</Key>, t.help.panels],
+  [<Key>Esc</Key>, NONE, t.help.escape],
 ]
 
 export function HelpDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -31,20 +35,35 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose: () => vo
           className="flex items-center justify-between gap-3 border-b px-5 py-4"
           style={{ borderColor: 'var(--kg-hair)' }}
         >
-          <Text variant="heading">キー操作</Text>
-          <Button variant="ghost" shape="square" icon={XIcon} aria-label="閉じる" onClick={onClose} />
+          <Text variant="heading">{t.help.title}</Text>
+          <Button
+            variant="ghost"
+            shape="square"
+            icon={XIcon}
+            aria-label={t.app.close}
+            onClick={onClose}
+          />
         </div>
         <div className="max-h-[70vh] overflow-y-auto px-5 py-2">
           <table className="w-full border-collapse text-[13px]">
             <tbody>
               {ROWS.map(([vim, alt, desc], i) => {
-                // 先頭行だけ境界線を引かない。モーダルのヘッダーに既に線があるので二重になる。
+                // No rule on the first row: the dialog header already draws one.
                 const rule = i === 0 ? {} : { borderTopWidth: 1, borderColor: 'var(--kg-hair)' }
                 return (
                   <tr key={i}>
-                    <td className="w-[150px] whitespace-nowrap py-2 align-top" style={rule}>{vim}</td>
-                    <td className="w-[86px] whitespace-nowrap py-2 align-top" style={rule}>{alt}</td>
-                    <td className="kg-jp-text py-2 align-top" style={{ ...rule, color: 'var(--kg-muted)' }}>{desc}</td>
+                    <td className="w-[150px] whitespace-nowrap py-2 align-top" style={rule}>
+                      {vim}
+                    </td>
+                    <td className="w-[86px] whitespace-nowrap py-2 align-top" style={rule}>
+                      {alt}
+                    </td>
+                    <td
+                      className="kg-jp-text py-2 align-top"
+                      style={{ ...rule, color: 'var(--kg-muted)' }}
+                    >
+                      {desc}
+                    </td>
                   </tr>
                 )
               })}
@@ -55,7 +74,7 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose: () => vo
           className="border-t px-5 py-3 text-[11.5px] leading-relaxed"
           style={{ borderColor: 'var(--kg-hair)', color: 'var(--kg-muted)' }}
         >
-          自動再生中に前のカードへ戻っても、再生は止まりません。戻ったカードを通常より長く表示したあと、そのまま自動再生を続けます。
+          {t.help.footnote}
         </div>
       </Dialog>
     </Dialog.Root>

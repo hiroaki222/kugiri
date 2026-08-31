@@ -3,6 +3,13 @@ import { z } from 'zod'
 export const BACKGROUNDS = ['light', 'cream', 'navy', 'black'] as const
 export type Background = (typeof BACKGROUNDS)[number]
 
+/** Backgrounds dark enough that Kumo has to run in its dark mode. */
+export const DARK_BACKGROUNDS: readonly Background[] = ['navy', 'black']
+
+export const CPM_MIN = 300
+export const CPM_MAX = 4000
+export const clampCpm = (v: number) => Math.min(CPM_MAX, Math.max(CPM_MIN, v))
+
 export const DEFAULTS = {
   v: 1 as const,
   sizePx: 30,
@@ -29,7 +36,7 @@ const schema = z.object({
   letterSpacing: clamped(0, 0.3, DEFAULTS.letterSpacing),
   spanChars: clamped(4, 14, DEFAULTS.spanChars),
   bg: z.enum(BACKGROUNDS).catch(DEFAULTS.bg),
-  cpm: clamped(300, 4000, DEFAULTS.cpm),
+  cpm: clamped(CPM_MIN, CPM_MAX, DEFAULTS.cpm),
   summaryOn: z.boolean().catch(DEFAULTS.summaryOn),
   summaryRatio: clamped(0.1, 1.2, DEFAULTS.summaryRatio),
   reviewStrength: clamped(0, 2, DEFAULTS.reviewStrength),

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react'
+import { t } from '@/i18n'
 import type { Card } from '@/lib/repair'
 
 type Props = {
@@ -89,11 +90,11 @@ export function Progress({ cards, paragraphs, sourceLength, offset, onSeekOffset
       className="block h-5 w-full cursor-pointer rounded-sm"
       tabIndex={0}
       role="slider"
-      aria-label="読書の進み具合"
+      aria-label={t.reading.progress}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={Math.round(pct * 100)}
-      aria-valuetext={`本文の${Math.round(pct * 100)}%`}
+      aria-valuetext={t.reading.progressValue(Math.round(pct * 100))}
       data-hotkeys-off
       onPointerDown={(e) => {
         e.currentTarget.setPointerCapture(e.pointerId)

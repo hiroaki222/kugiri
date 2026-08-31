@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { t } from '@/i18n'
 import type { Card } from '@/lib/repair'
 import type { PlaybackStep } from '@/lib/steps'
 import type { Display } from '@/state/playback'
@@ -132,7 +133,7 @@ export function CardStage(props: Props) {
               ref={scrollRef}
               tabIndex={0}
               data-hotkeys-off
-              aria-label="内容が横幅に収まっていません。Shift キーと左右の矢印キーで横にスクロールできます"
+              aria-label={t.reading.overflowCard}
               className="mx-3 overflow-x-auto"
               style={{ overscrollBehaviorX: 'contain' }}
               onKeyDown={(e) => {
@@ -163,14 +164,14 @@ export function CardStage(props: Props) {
           style={{ top: `calc(50% + ${Math.round(sizePx * 1.2) + 76}px)` }}
         >
           <p className="m-0 text-sm font-medium">
-            {'右下の再生ボタンか '}
+            {t.reading.startHintBefore}
             <kbd className="rounded-sm border px-1.5 py-0.5 text-xs" style={{ borderColor: 'var(--kg-hair)' }}>
-              Space
+              {t.reading.startHintKey}
             </kbd>
-            {' で始まります'}
+            {t.reading.startHintAfter}
           </p>
           <p className="m-0 text-xs" style={{ color: 'var(--kg-muted)' }}>
-            自分のペースで送るなら ← → 、止めると前後の文が出ます
+            {t.reading.startHintSub}
           </p>
         </div>
       )}
@@ -198,7 +199,9 @@ export function CardStage(props: Props) {
             className="absolute inset-x-0 top-3 text-center text-[10px] uppercase tracking-[0.14em]"
             style={{ color: 'var(--kg-muted)' }}
           >
-            {step.sentenceIds.length > 1 ? `直前の ${step.sentenceIds.length} 文` : 'この文の全体'}
+            {step.sentenceIds.length > 1 ?
+              t.reading.summaryMany(step.sentenceIds.length)
+            : t.reading.summaryOne}
           </div>
           <p
             className="max-h-full max-w-[42em] overflow-y-auto text-[17px] leading-[2.05]"
@@ -224,7 +227,7 @@ export function CardStage(props: Props) {
               background: 'linear-gradient(to bottom, var(--kg-overlay) 55%, transparent)',
             }}
           >
-            文脈
+            {t.reading.context}
           </div>
           <div className="kg-context h-full overflow-y-auto px-11" tabIndex={0} data-hotkeys-off>
             {/* 上下に画面半分ぶんの余白を敷く。これが無いと、文脈が短いときに
