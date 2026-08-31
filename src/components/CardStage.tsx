@@ -98,7 +98,7 @@ export function CardStage(props: Props) {
       ref={props.stageRef}
       className="kg-type relative flex flex-1 items-center overflow-hidden"
       style={{
-        background: dim ? 'color-mix(in srgb, var(--kg-paper) 86%, #000)' : 'var(--kg-paper)',
+        background: dim ? 'var(--kg-dim)' : 'var(--kg-paper)',
         transition: 'background-color .25s',
       }}
     >
@@ -118,7 +118,9 @@ export function CardStage(props: Props) {
           className="relative w-full text-center"
           style={
             // 未開始のカードは沈めて、目を「始め方」の案内に向ける。
-            idle ? { filter: 'grayscale(1)', opacity: 0.32, transition: 'opacity .25s' } : undefined
+            // 彩度を落とす加工はしない。暗い配色ではカードの面だけが灰色の矩形に
+            // なって地から浮き、かえって目障りになる。沈めるのは不透明度だけ。
+            idle ? { opacity: 'var(--kg-idle-opacity)', transition: 'opacity .25s' } : undefined
           }
         >
           <span aria-hidden className="absolute left-1/2 h-4 w-px" style={{ top: -30, background: 'var(--kg-mark)' }} />
@@ -238,7 +240,7 @@ export function CardStage(props: Props) {
                         {b.before}
                         <mark
                           style={{
-                            background: 'color-mix(in srgb, var(--kg-mark) 22%, transparent)',
+                            background: 'var(--kg-mark-fill)',
                             color: 'var(--kg-ink)',
                             fontWeight: 600,
                           }}

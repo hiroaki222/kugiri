@@ -24,12 +24,22 @@
   --kg-hair: #c7cec8;
 }
 
-/* 視線誘導の線。--kg-hair のような固定色だと「周辺を暗くする」で背景が沈んだとき
-   線と背景の明度が一致して消える。地の色に対する相対値で持つ。 */
+/* 地の色から導く値。明い背景では「面を落とす」ことが浮き上がりを作るが、
+   暗い背景では逆に持ち上げないと差が出ないので、暗い配色側で上書きする。 */
 :root {
+  /* 視線誘導の線。--kg-hair のような固定色だと「周辺を暗くする」で背景が沈んだとき
+     線と背景の明度が一致して消える。地の色に対する相対値で持つ。 */
   --kg-guide: color-mix(in srgb, var(--kg-ink) 24%, transparent);
   /* 全文カード・文脈画面が地の上に敷く面 */
   --kg-overlay: color-mix(in srgb, var(--kg-paper) 96%, #000);
+  /* 「周辺を暗くする」の地 */
+  --kg-dim: color-mix(in srgb, var(--kg-paper) 86%, #000);
+  /* カードが載る面 */
+  --kg-card-bg: var(--kg-panel);
+  /* 文脈で現在のカードを示す塗り */
+  --kg-mark-fill: color-mix(in srgb, var(--kg-mark) 22%, transparent);
+  /* 未再生のカードの沈め具合 */
+  --kg-idle-opacity: 0.32;
 }
 [data-bg="cream"] {
   --color-kumo-brand: #1b4fa0;
@@ -59,6 +69,11 @@
   --kg-muted: #8496ab;
   --kg-mark: #7fa9e0;
   --kg-hair: #2e3d52;
+  --kg-overlay: #202d40;
+  --kg-dim: #0e1620;
+  --kg-card-bg: #26344a;
+  --kg-mark-fill: color-mix(in srgb, var(--kg-mark) 32%, transparent);
+  --kg-idle-opacity: 0.5;
 }
 [data-bg="black"] {
   --color-kumo-brand: #8fb0de;
@@ -74,6 +89,11 @@
   --kg-muted: #918e86;
   --kg-mark: #8fb0de;
   --kg-hair: #333;
+  --kg-overlay: #262626;
+  --kg-dim: #101010;
+  --kg-card-bg: #2e2e2e;
+  --kg-mark-fill: color-mix(in srgb, var(--kg-mark) 30%, transparent);
+  --kg-idle-opacity: 0.5;
 }
 
 /* Noto Sans JP は unicode-range 分割の woff2 一式を同梱している (124 サブセット)。
@@ -134,7 +154,7 @@ body {
   max-width: none;
   padding: 0.42em 0.55em;
   line-height: 1.5;
-  background: var(--kg-panel);
+  background: var(--kg-card-bg);
 }
 
 @media (prefers-reduced-motion: reduce) {
