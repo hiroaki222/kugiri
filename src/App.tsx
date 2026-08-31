@@ -284,7 +284,13 @@ export default function App() {
           </div>
           {ready && (
             <>
-              <div className="flex-none border-t px-5 py-1.5" style={{ background: 'var(--kg-panel)', borderColor: 'var(--kg-hair)' }}>
+              {/* 進み具合の % は速度の並びではなく進捗バーの側に置く。
+                  cpm の隣にあると速度に関する数字だと読めてしまう。 */}
+              <div
+                className="flex flex-none items-center gap-3 border-t px-5 py-1.5"
+                style={{ background: 'var(--kg-panel)', borderColor: 'var(--kg-hair)' }}
+              >
+                <div className="min-w-0 flex-1">
                 <Progress
                   cards={ready.cards}
                   paragraphs={ready.paragraphs}
@@ -295,13 +301,13 @@ export default function App() {
                     seekStep(findStepForCard(ci < 0 ? ready.cards.length - 1 : ci), 'slider')
                   }}
                 />
+                </div>
+                <b className="w-9 shrink-0 text-right text-[11px] tabular-nums">{pct}%</b>
               </div>
               <div
                 className="flex flex-none flex-wrap items-center justify-between gap-4 border-t px-5 py-2.5 text-[11px] tabular-nums"
                 style={{ background: 'var(--kg-panel)', borderColor: 'var(--kg-hair)', color: 'var(--kg-muted)' }}
               >
-                <span className="flex items-center gap-3">
-                  <b className="w-10" style={{ color: 'var(--kg-ink)' }}>{pct}%</b>
                   <span className="flex items-center gap-1.5">
                     <Button variant="ghost" shape="square" icon={MinusIcon} aria-label="速度を下げる"
                       onClick={() => patch({ cpm: Math.max(300, settings.cpm - 50) })} />
@@ -317,7 +323,6 @@ export default function App() {
                       onClick={() => patch({ cpm: Math.min(4000, settings.cpm + 50) })} />
                     <span className="w-[68px] shrink-0">{settings.cpm} cpm</span>
                   </span>
-                </span>
 
                 <span className="flex items-center gap-2">
                   {pb.scrollBlocked && (
