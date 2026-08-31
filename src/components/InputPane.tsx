@@ -41,26 +41,13 @@ export function InputPane({ value, onChange, onRead, onSample, fixPdfWrap, onFix
             className="min-h-[230px] w-full"
           />
         </Field>
-        <div
-          className="rounded-md border px-4 py-3"
-          style={{ borderColor: 'var(--kg-hair)', background: 'var(--kg-panel)' }}
-        >
-          <div className="kg-switch-row">
-            <Switch
-              label="PDF の改行を取り除く"
-              controlFirst={false}
-              checked={fixPdfWrap}
-              onCheckedChange={onFixPdfWrapChange}
-            />
-          </div>
-          <p
-            className="kg-jp-text m-0 mt-1.5 text-[11.5px] leading-relaxed"
-            style={{ color: 'var(--kg-muted)' }}
-          >
-            PDF などで文の途中に入ってしまう改行を取り除きます。詩や箇条書きでは
-            行の区切りが失われるため、必要なときだけオンにしてください。
-          </p>
-        </div>
+        <Switch
+          label="PDF の改行を取り除く"
+          labelTooltip="PDF などで文の途中に入ってしまう改行を取り除きます。詩や箇条書きでは行の区切りが失われるため、必要なときだけオンにしてください。"
+          controlFirst={false}
+          checked={fixPdfWrap}
+          onCheckedChange={onFixPdfWrapChange}
+        />
         <div className="flex flex-wrap items-center justify-end gap-2.5">
           <span
             className="mr-auto text-[11px] tabular-nums"
