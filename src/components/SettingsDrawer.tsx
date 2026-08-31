@@ -321,7 +321,9 @@ export function SettingsDrawer({ open, settings, onChange, onClose }: Props) {
                 render={<Button variant="destructive">すべて初期値に戻す</Button>}
               />
               <Popover.Content side="top" align="end" className="grid max-w-[19rem] gap-3">
-                <Popover.Description className="kg-jp-text m-0 text-sm leading-[1.7]">
+                {/* Popover.Description の既定は text-kumo-subtle。ここは補足ではなく
+                    判断そのものの文なので本文色にする。 */}
+                <Popover.Description className="kg-jp-text m-0 text-sm leading-[1.7] text-kumo-default">
                   文字サイズから速度まで、この画面のすべての設定が初期値に戻ります。
                 </Popover.Description>
                 <div className="flex justify-end gap-2">
