@@ -28,7 +28,7 @@ export const ja = {
   },
 
   reading: {
-    building: '区切っています…',
+    building: '読む準備をしています…',
     errorTitle: '読み込めませんでした',
     startHintBefore: '右下の再生ボタンか ',
     startHintKey: 'Space',

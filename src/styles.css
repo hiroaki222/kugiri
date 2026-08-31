@@ -200,3 +200,28 @@ body {
 .kg-context {
   container-type: size;
 }
+
+/* Indeterminate progress while the deck is being built. */
+@keyframes kg-indeterminate {
+  0% {
+    transform: translateX(-110%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
+.kg-indeterminate::after {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  width: 32%;
+  border-radius: inherit;
+  background: var(--kg-mark);
+  animation: kg-indeterminate 1.15s ease-in-out infinite;
+}
+/* A frozen bar would read as finished, so it is removed rather than stopped. */
+@media (prefers-reduced-motion: reduce) {
+  .kg-indeterminate::after {
+    display: none;
+  }
+}

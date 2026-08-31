@@ -40,8 +40,20 @@ export function ReadingView({ state, playback, settings, onCpm, onContainer }: P
         className="flex flex-1 flex-col"
       >
         {!ready && (
-          <div className="grid flex-1 place-items-center text-sm" style={{ color: 'var(--kg-muted)' }}>
-            {state.status === 'building' ? t.reading.building : ''}
+          <div className="grid flex-1 place-items-center">
+            {state.status === 'building' && (
+              <div className="grid w-[min(260px,60vw)] justify-items-center gap-3">
+                {/* The wait is mostly typeface subsets arriving, which has no
+                    meaningful percentage, so the bar is indeterminate. */}
+                <div
+                  className="kg-indeterminate relative h-[3px] w-full overflow-hidden rounded-full"
+                  style={{ background: 'color-mix(in srgb, var(--kg-mark) 14%, transparent)' }}
+                />
+                <p className="m-0 text-sm" style={{ color: 'var(--kg-muted)' }}>
+                  {t.reading.building}
+                </p>
+              </div>
+            )}
           </div>
         )}
         {ready && (

@@ -5,6 +5,7 @@ import { InputPane } from '@/components/InputPane'
 import { ReadingView } from '@/components/ReadingView'
 import { SettingsDrawer } from '@/components/SettingsDrawer'
 import { useDeck } from '@/hooks/useDeck'
+import { useFontPrefetch } from '@/hooks/useFontPrefetch'
 import { usePlayback } from '@/hooks/usePlayback'
 import { useReadingHotkeys } from '@/hooks/useReadingHotkeys'
 import { useSettings } from '@/hooks/useSettings'
@@ -24,6 +25,7 @@ export default function App() {
   const [container, setContainer] = useState<HTMLElement | null>(null)
 
   const { state, setAnchor } = useDeck(view === 'read' ? raw : '', settings, container, unwrap)
+  useFontPrefetch(raw, settings.sizePx, view === 'compose')
   const playback = usePlayback(state, settings, setAnchor)
   const { setSuspended } = playback
 
