@@ -10,7 +10,7 @@ export const DEFAULTS = {
   spanChars: 7,
   bg: 'hai' as Background,
   cpm: 1200,
-  summaryOn: true,
+  summaryOn: false,
   summaryRatio: 0.4,
   fixPdfWrap: false,
   dimSurround: false,
