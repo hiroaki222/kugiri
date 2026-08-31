@@ -258,6 +258,7 @@ export default function App() {
                   paragraphs={ready.paragraphs}
                   sourceLength={ready.source.length}
                   offset={offset}
+                  onTogglePlay={() => dispatch({ type: 'PLAY' })}
                   onSeekOffset={(o) => {
                     const ci = ready.cards.findIndex((c) => o < c.sourceEnd)
                     seekStep(findStepForCard(ci < 0 ? ready.cards.length - 1 : ci), 'slider')
@@ -265,41 +266,57 @@ export default function App() {
                 />
               </div>
               <div
-                className="flex flex-none flex-wrap items-center justify-between gap-3 border-t px-5 py-2.5 text-[11px] tabular-nums"
+                className="flex flex-none flex-wrap items-center justify-between gap-4 border-t px-5 py-2.5 text-[11px] tabular-nums"
                 style={{ background: 'var(--kg-panel)', borderColor: 'var(--kg-hair)', color: 'var(--kg-muted)' }}
               >
-                <span className="flex flex-1 items-center gap-3">
+                <span className="flex items-center gap-3">
                   <b className="w-10" style={{ color: 'var(--kg-ink)' }}>{pct}%</b>
-                  <span className="flex min-w-0 flex-1 items-center gap-2">
-                    <Button
-                      variant="ghost" shape="square" icon={MinusIcon} aria-label="速度を下げる"
-                      onClick={() => patch({ cpm: Math.max(300, settings.cpm - 50) })}
-                    />
+                  <span className="flex items-center gap-1.5">
+                    <Button variant="ghost" shape="square" icon={MinusIcon} aria-label="速度を下げる"
+                      onClick={() => patch({ cpm: Math.max(300, settings.cpm - 50) })} />
                     <input
                       type="range" min={300} max={4000} step={50} value={settings.cpm}
                       aria-label="読み上げ速度"
                       onChange={(e) => patch({ cpm: Number(e.target.value) })}
-                      className="min-w-0 flex-1 cursor-pointer"
+                      className="w-[clamp(140px,26vw,340px)] cursor-pointer"
                       style={{ accentColor: 'var(--kg-mark)' }}
                       data-hotkeys-off
                     />
-                    <Button
-                      variant="ghost" shape="square" icon={PlusIcon} aria-label="速度を上げる"
-                      onClick={() => patch({ cpm: Math.min(4000, settings.cpm + 50) })}
-                    />
-                    <span className="w-[68px] shrink-0 tabular-nums">{settings.cpm} cpm</span>
+                    <Button variant="ghost" shape="square" icon={PlusIcon} aria-label="速度を上げる"
+                      onClick={() => patch({ cpm: Math.min(4000, settings.cpm + 50) })} />
+                    <span className="w-[68px] shrink-0">{settings.cpm} cpm</span>
                   </span>
-                  {pb.scrollBlocked && (
-                    <span className="shrink-0" style={{ color: 'var(--kg-mark)' }}>Space で次へ</span>
-                  )}
                 </span>
-                <span className="flex items-center gap-1.5">
+
+                <span className="flex items-center gap-2">
+                  {pb.scrollBlocked && (
+                    <span className="mr-1 rounded-sm px-2 py-1 text-[11px]"
+                          style={{ background: 'color-mix(in srgb, var(--kg-mark) 14%, transparent)', color: 'var(--kg-mark)' }}>
+                      横に収まりません ・ スペースキーで次へ
+                    </span>
+                  )}
                   <Button variant="ghost" shape="square" icon={CaretLeftIcon} aria-label="前へ"
                     onClick={() => seekStep(pb.stepIndex - 1, 'key-card')} />
-                  <Button variant="secondary" icon={effectivePlaying(pb) ? StopIcon : PlayIcon}
-                    onClick={() => dispatch({ type: 'PLAY' })}>
+                  {/* ボタンには「今の状態」ではなく「押したら何が起きるか」を出す。
+                      再生中は押せば止まるので「停止」= 赤。停止中は「再生」= 枠線だけ。
+                      色と塗りの差で周辺視からも状態が読める。 */}
+                  <button
+                    type="button"
+                    onClick={() => dispatch({ type: 'PLAY' })}
+                    aria-pressed={effectivePlaying(pb)}
+                    aria-label={effectivePlaying(pb) ? '停止' : '再生'}
+                    className="flex h-9 min-w-[104px] cursor-pointer items-center justify-center gap-2 rounded-md px-4 text-[13px] font-semibold transition-colors"
+                    style={
+                      // 再生中は塗り (押せば止まる)、停止中は枠線だけ。
+                      // 塗りの有無で周辺視からも状態が読める。
+                      effectivePlaying(pb)
+                        ? { background: 'var(--kg-mark)', color: 'var(--kg-panel)', border: '1px solid var(--kg-mark)' }
+                        : { background: 'transparent', color: 'var(--kg-ink)', border: '1px solid var(--kg-hair)' }
+                    }
+                  >
+                    {effectivePlaying(pb) ? <StopIcon weight="fill" size={16} /> : <PlayIcon weight="fill" size={16} />}
                     {effectivePlaying(pb) ? '停止' : '再生'}
-                  </Button>
+                  </button>
                   <Button variant="ghost" shape="square" icon={CaretRightIcon} aria-label="次へ"
                     onClick={() => seekStep(pb.stepIndex + 1, 'key-card')} />
                 </span>

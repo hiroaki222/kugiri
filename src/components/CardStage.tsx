@@ -89,7 +89,7 @@ export function CardStage(props: Props) {
               ref={scrollRef}
               tabIndex={0}
               data-hotkeys-off
-              aria-label="長いカード。Shift と左右キーでスクロールできます"
+              aria-label="内容が横幅に収まっていません。Shift キーと左右の矢印キーで横にスクロールできます"
               className="mx-3 overflow-x-auto"
               style={{ overscrollBehaviorX: 'contain' }}
               onKeyDown={(e) => {
@@ -135,7 +135,7 @@ export function CardStage(props: Props) {
             className="absolute inset-x-0 top-3 text-center text-[10px] uppercase tracking-[0.14em]"
             style={{ color: 'var(--kg-muted)' }}
           >
-            {step.sentenceIds.length > 1 ? `ここまでの ${step.sentenceIds.length} 文` : 'この文の全文'}
+            {step.sentenceIds.length > 1 ? `直前の ${step.sentenceIds.length} 文` : 'この文の全体'}
           </div>
           <p
             className="max-h-full max-w-[42em] overflow-y-auto text-[17px] leading-[2.05]"

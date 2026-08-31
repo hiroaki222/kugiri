@@ -11,16 +11,16 @@ const Key = ({ children }: { children: React.ReactNode }) => (
 )
 
 const ROWS: [React.ReactNode, React.ReactNode, string][] = [
-  [<><Key>h</Key><Key>l</Key></>, <><Key>←</Key><Key>→</Key></>, '前 / 次のカード。h は長押しで加速しながら巻き戻ります'],
-  [<><Key>k</Key><Key>j</Key></>, <><Key>↑</Key><Key>↓</Key></>, '前 / 次の文の先頭へ'],
-  [<><Key>{'{'}</Key><Key>{'}'}</Key></>, <>—</>, '前 / 次の段落へ'],
-  [<><Key>g</Key><Key>g</Key></>, <Key>G</Key>, '文書の先頭 / 末尾へ'],
-  [<Key>Space</Key>, <>—</>, '再生 / 停止（停止すると文脈が出ます）'],
-  [<><Key>&lt;</Key><Key>&gt;</Key></>, <>—</>, '速度を下げる / 上げる（Shift を押しながら）'],
-  [<Key>K</Key>, <>—</>, '押している間、今の文の全文を表示（Shift + k）'],
-  [<><Key>Shift</Key><Key>←</Key><Key>→</Key></>, <>—</>, '長い URL などのカードを横スクロール'],
-  [<Key>?</Key>, <Key>,</Key>, 'この画面 / 詳細設定'],
-  [<Key>Esc</Key>, <>—</>, '停止して解除'],
+  [<><Key>h</Key><Key>l</Key></>, <><Key>←</Key><Key>→</Key></>, '前／次のカードへ。h は長押しすると、だんだん速く巻き戻ります'],
+  [<><Key>k</Key><Key>j</Key></>, <><Key>↑</Key><Key>↓</Key></>, '前／次の文の先頭へ'],
+  [<><Key>{'{'}</Key><Key>{'}'}</Key></>, <>—</>, '前／次の段落へ'],
+  [<><Key>g</Key><Key>g</Key></>, <Key>G</Key>, '文書の先頭／末尾へ'],
+  [<Key>Space</Key>, <>—</>, '再生／停止。停止すると、今の文の全体を表示します'],
+  [<><Key>&lt;</Key><Key>&gt;</Key></>, <>—</>, '速度を下げる／上げる（Shift キーを押しながら）'],
+  [<Key>K</Key>, <>—</>, '押している間だけ、今の文の全体を表示（Shift + k）'],
+  [<><Key>Shift</Key><Key>←</Key><Key>→</Key></>, <>—</>, '長い URL などで横に収まらないカードをスクロール'],
+  [<Key>?</Key>, <Key>,</Key>, 'この画面／詳細設定'],
+  [<Key>Esc</Key>, <>—</>, '再生を止めて、開いている表示を閉じる'],
 ]
 
 export function HelpDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -51,7 +51,7 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose: () => vo
           className="border-t px-5 py-3 text-[11.5px] leading-relaxed"
           style={{ borderColor: 'var(--kg-hair)', color: 'var(--kg-muted)' }}
         >
-          戻る操作は最優先で軽くしてあります。自動再生中に戻っても停止せず、そのカードを長めに出してから流れに復帰します。
+          自動再生中に前のカードへ戻っても、再生は止まりません。戻ったカードを通常より長く表示したあと、そのまま自動再生を続けます。
         </div>
       </Dialog>
     </Dialog.Root>

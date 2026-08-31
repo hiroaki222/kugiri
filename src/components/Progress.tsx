@@ -8,11 +8,14 @@ type Props = {
   /** 進捗表示用のオフセット。位置復元用の anchor とは別物。 */
   offset: number
   onSeekOffset: (offset: number) => void
+  /** バーにフォーカスがあるときも Space で再生を切り替えられるようにする。
+   *  data-hotkeys-off でグローバルのキー処理から外しているため、ここで受ける。 */
+  onTogglePlay: () => void
 }
 
 /** Kumo に該当コンポーネントが無いので canvas で自前描画する。
  *  Meter はクリックで移動できず、カード単位の区切りも描けない。 */
-export function Progress({ cards, paragraphs, sourceLength, offset, onSeekOffset }: Props) {
+export function Progress({ cards, paragraphs, sourceLength, offset, onSeekOffset, onTogglePlay }: Props) {
   const ref = useRef<HTMLCanvasElement>(null)
   const pct = sourceLength > 0 ? Math.min(1, offset / sourceLength) : 0
 
@@ -87,7 +90,7 @@ export function Progress({ cards, paragraphs, sourceLength, offset, onSeekOffset
       className="block h-5 w-full cursor-pointer rounded-sm"
       tabIndex={0}
       role="slider"
-      aria-label="読んでいる位置"
+      aria-label="読書の進み具合"
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={Math.round(pct * 100)}
@@ -102,6 +105,7 @@ export function Progress({ cards, paragraphs, sourceLength, offset, onSeekOffset
       }}
       onKeyDown={(e) => {
         const map: Record<string, () => void> = {
+          ' ': onTogglePlay,
           ArrowLeft: () => step(-1),
           ArrowRight: () => step(1),
           PageDown: () => step(5),

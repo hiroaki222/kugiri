@@ -118,14 +118,14 @@ export function SettingsDrawer({ open, settings, onChange, onClose }: Props) {
             onChange={(sizePx) => onChange({ sizePx })}
           />
           <Slider
-            label="文字間の幅"
+            label="文字間隔"
             value={settings.letterSpacing}
             display={`${settings.letterSpacing.toFixed(2)} em`}
             min={0}
             max={0.3}
             step={0.01}
             onChange={(letterSpacing) => onChange({ letterSpacing })}
-            note="広げると隣の字からの干渉が減ります。"
+            note="広げると、隣り合う文字を見分けやすくなります。"
           />
           <Slider
             label="知覚スパン"
@@ -135,7 +135,7 @@ export function SettingsDrawer({ open, settings, onChange, onClose }: Props) {
             max={14}
             step={1}
             onChange={(spanChars) => onChange({ spanChars })}
-            note="1枚に入る量の目安。既定の7字は「一度に読み取れる範囲」の目安です。"
+            note="1枚に表示する文字数の目安です。初期値の7字は、一度に読み取りやすい範囲を基準にしています。"
           />
           <div className="grid gap-2">
             <div className="flex items-baseline justify-between gap-3">
@@ -163,24 +163,24 @@ export function SettingsDrawer({ open, settings, onChange, onClose }: Props) {
             </div>
           </div>
 
-          <Group title="全文カード">
+          <Group title="文全体の表示">
             <div className="kg-switch-row">
               <Switch
-                label="文の終わりに全文を出す"
+                label="文を読み終えたら文全体を表示する"
                 controlFirst={false}
                 checked={settings.summaryOn}
                 onCheckedChange={(summaryOn: boolean) => onChange({ summaryOn })}
               />
             </div>
             <Slider
-              label="全文カードの長さ"
+              label="文全体の表示時間"
               value={settings.summaryRatio}
               display={`${Math.round(settings.summaryRatio * 100)} %`}
               min={0.1}
               max={1.2}
               step={0.05}
               onChange={(summaryRatio) => onChange({ summaryRatio })}
-              note="その文を読むのにかかる時間に対する割合。長い文ほど自動的に長く出ます。"
+              note="その文を読む時間に対する割合です。長い文ほど表示時間も長くなります。"
             />
           </Group>
 
@@ -198,15 +198,15 @@ export function SettingsDrawer({ open, settings, onChange, onClose }: Props) {
           <Group title="貼り付け">
             <div className="kg-switch-row">
               <Switch
-                label="PDF の改行を補正する"
+                label="PDF の改行を取り除く"
                 controlFirst={false}
                 checked={settings.fixPdfWrap}
                 onCheckedChange={(fixPdfWrap: boolean) => onChange({ fixPdfWrap })}
               />
             </div>
             <p className="kg-jp-text m-0 text-[11.5px] leading-relaxed" style={{ color: 'var(--kg-muted)' }}>
-              論文などで文の途中に入る改行をつなぎます。詩や箇条書きでは意味が変わるので、
-              必要なときだけ入れてください。
+              PDF などで文の途中に入ってしまう改行を取り除きます。詩や箇条書きでは
+              行の区切りが失われるため、必要なときだけオンにしてください。
             </p>
           </Group>
 
@@ -248,7 +248,7 @@ export function SettingsDrawer({ open, settings, onChange, onClose }: Props) {
                 style={{ accentColor: 'var(--kg-mark)' }}
               />
               <p className="kg-jp-text m-0 text-[11.5px] leading-relaxed" style={{ color: 'var(--kg-muted)' }}>
-                1分あたりに送る文字量。全角1字を2、半角1字を1として数えます。
+                1分あたりに送る文字量です。全角1字を2、半角1字を1として数えます。
               </p>
             </div>
           </Group>
