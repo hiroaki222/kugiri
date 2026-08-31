@@ -331,7 +331,7 @@ export function SettingsDrawer({ open, settings, onChange, onClose }: Props) {
                   <Popover.Close
                     render={
                       <Button variant="destructive" onClick={() => onChange(DEFAULTS)}>
-                        戻す
+                        初期値に戻す
                       </Button>
                     }
                   />
