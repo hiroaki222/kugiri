@@ -24,43 +24,97 @@
         el.style.colorScheme = dark ? 'dark' : 'light'
       } catch {}
     </script>
+    <style>
+      /* The placeholder has to stand on its own. In development the app's
+         stylesheet is injected by the bundle, which is the thing still loading,
+         so anything it depends on would be unstyled for exactly as long as it
+         is on screen. Tokens are read with fallbacks: once the stylesheet is
+         there, the placeholder follows the chosen theme. */
+      body {
+        margin: 0;
+      }
+      #kg-boot {
+        display: flex;
+        /* vh rather than %, which would need a height on html and body — and
+           that rule also lives in the stylesheet that has not arrived yet. */
+        min-height: 100vh;
+        flex-direction: column;
+        background: var(--kg-paper, #e9ece8);
+        font-family: 'Noto Sans JP', system-ui, sans-serif;
+      }
+      #kg-boot > header {
+        display: flex;
+        flex: none;
+        align-items: baseline;
+        gap: 8px;
+        border-bottom: 1px solid var(--kg-hair, #c7cec8);
+        background: var(--kg-panel, #f5f7f3);
+        padding: 15px 20px;
+      }
+      #kg-boot b {
+        font-size: 15px;
+        color: var(--kg-ink, #131820);
+      }
+      #kg-boot header span {
+        font-size: 10.5px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--kg-muted, #626e78);
+      }
+      #kg-boot > div {
+        display: grid;
+        flex: 1;
+        align-content: center;
+        justify-items: center;
+        gap: 12px;
+        /* Held back for a moment: on a fast connection the bundle wins the race
+           and a spinner that flashed for one frame would only add noise. */
+        opacity: 0;
+        animation: kg-boot-in 0.2s ease 0.3s forwards;
+      }
+      #kg-boot i {
+        box-sizing: border-box;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 2.5px solid color-mix(in srgb, var(--kg-mark, #14479b) 18%, transparent);
+        border-top-color: var(--kg-mark, #14479b);
+        animation: kg-boot-spin 0.8s linear infinite;
+      }
+      #kg-boot p {
+        margin: 0;
+        font-size: 14px;
+        color: var(--kg-muted, #626e78);
+      }
+      @keyframes kg-boot-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      @keyframes kg-boot-in {
+        to {
+          opacity: 1;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #kg-boot i {
+          animation: none;
+        }
+      }
+    </style>
   </head>
   <body>
     <!-- Replaced the moment React mounts. Without it the ground sits empty for
          as long as the bundle takes to arrive and parse, which reads as a page
-         that failed to load. Styled inline, and with the same tokens and bar as
-         the app, so the swap is not visible. -->
+         that failed to load. The header sits where the real one does, so the
+         swap is not visible. The wording is repeated from src/i18n rather than
+         imported, for the same reason the styles above are inline. -->
     <div id="root">
-      <div style="display: flex; min-height: 100%; flex-direction: column">
-        <header
-          style="
-            display: flex;
-            flex: none;
-            align-items: baseline;
-            gap: 8px;
-            border-bottom: 1px solid var(--kg-hair);
-            background: var(--kg-panel);
-            padding: 15px 20px;
-          "
-        >
-          <b style="font-size: 15px">Kugiri</b>
-          <span
-            style="
-              font-size: 10.5px;
-              letter-spacing: 0.14em;
-              text-transform: uppercase;
-              color: var(--kg-muted);
-            "
-            >くぎり</span
-          >
-        </header>
-        <div style="display: grid; flex: 1; place-items: center">
-          <div class="kg-boot" style="display: grid; justify-items: center; gap: 12px">
-            <div class="kg-spinner"></div>
-            <!-- Repeated from src/i18n rather than imported: this has to render
-                 before any module is loaded. -->
-            <p style="margin: 0; font-size: 14px; color: var(--kg-muted)">読み込んでいます…</p>
-          </div>
+      <div id="kg-boot">
+        <header><b>Kugiri</b><span>くぎり</span></header>
+        <div>
+          <i></i>
+          <p>読み込んでいます…</p>
         </div>
       </div>
     </div>
