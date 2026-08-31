@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const BACKGROUNDS = ['hai', 'kinari', 'navy', 'sumi'] as const
+export const BACKGROUNDS = ['hakuji', 'gofun', 'tetsukon', 'sumi'] as const
 export type Background = (typeof BACKGROUNDS)[number]
 
 export const DEFAULTS = {
@@ -8,11 +8,10 @@ export const DEFAULTS = {
   sizePx: 30,
   letterSpacing: 0.02,
   spanChars: 7,
-  bg: 'hai' as Background,
+  bg: 'hakuji' as Background,
   cpm: 1200,
   summaryOn: false,
   summaryRatio: 0.4,
-  fixPdfWrap: false,
   reviewStrength: 1,
   dimSurround: false,
 }
@@ -32,7 +31,6 @@ const schema = z.object({
   cpm: clamped(300, 4000, DEFAULTS.cpm),
   summaryOn: z.boolean().catch(DEFAULTS.summaryOn),
   summaryRatio: clamped(0.1, 1.2, DEFAULTS.summaryRatio),
-  fixPdfWrap: z.boolean().catch(DEFAULTS.fixPdfWrap),
   reviewStrength: clamped(0, 2, DEFAULTS.reviewStrength),
   dimSurround: z.boolean().catch(DEFAULTS.dimSurround),
 })

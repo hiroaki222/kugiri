@@ -12,34 +12,49 @@ type Props = {
   sizePx: number
   letterSpacing: number
   dim: boolean
+  /** まだ一度も再生していない状態。カードを沈めて始め方を出す。 */
+  idle: boolean
   summaryProgress: number | null
   onSummaryFocus: (on: boolean) => void
   onSummaryScroll: (on: boolean) => void
   stageRef: React.RefObject<HTMLDivElement | null>
 }
 
-/** 文脈は現在カードを中心に前後を抜粋する。先頭からの抜粋だと文の後半にいるとき
+/** 現在の文だけでは「その前に何を読んだか」が分からず、戻る理由の多くを解決できない。
+ *  前後の文まで含めて出す。 */
+const CONTEXT_SENTENCES = 2
+/** 長すぎる場合の抜粋は現在カードを中心にする。先頭からの抜粋だと文の後半にいるとき
  *  現在カードが含まれず、読み返しという目的を失う。 */
-function contextParts(source: string, sentence: { start: number; end: number }, card: Card) {
-  const MAX = 600
-  let s = sentence.start
-  let e = sentence.end
-  if (e - s > MAX) {
-    const half = Math.floor((MAX - (card.sourceEnd - card.sourceStart)) / 2)
-    s = Math.max(sentence.start, card.sourceStart - half)
-    e = Math.min(sentence.end, card.sourceEnd + half)
+const CONTEXT_MAX = 1400
+
+function contextParts(
+  source: string,
+  sentences: { start: number; end: number }[],
+  card: Card,
+  sentenceId: number,
+) {
+  const first = sentences[Math.max(0, sentenceId - CONTEXT_SENTENCES)]
+  const last = sentences[Math.min(sentences.length - 1, sentenceId + CONTEXT_SENTENCES)]
+  const lo = first?.start ?? card.sourceStart
+  const hi = last?.end ?? card.sourceEnd
+  let s = lo
+  let e = hi
+  if (e - s > CONTEXT_MAX) {
+    const half = Math.floor((CONTEXT_MAX - (card.sourceEnd - card.sourceStart)) / 2)
+    s = Math.max(lo, card.sourceStart - half)
+    e = Math.min(hi, card.sourceEnd + half)
   }
   return {
-    head: s > sentence.start,
+    head: s > 0,
     before: source.slice(s, card.sourceStart),
     mark: source.slice(card.sourceStart, card.sourceEnd),
     after: source.slice(card.sourceEnd, e),
-    tail: e < sentence.end,
+    tail: e < source.length,
   }
 }
 
 export function CardStage(props: Props) {
-  const { step, cards, source, sentences, display, sizePx, letterSpacing, dim } = props
+  const { step, cards, source, sentences, display, sizePx, letterSpacing, dim, idle } = props
   const markRef = useRef<HTMLElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -71,7 +86,7 @@ export function CardStage(props: Props) {
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-1/2 h-px"
-        style={{ background: 'var(--kg-hair)' }}
+        style={{ background: 'var(--kg-guide)' }}
       />
 
       {step?.kind !== 'summary' && display.mode !== 'context' && (
@@ -79,7 +94,13 @@ export function CardStage(props: Props) {
         // 合わせる」なら総幅の検査では足りず、左右それぞれが収まることを見る必要がある
         // (anchorOffsetPx <= markerX かつ measuredPx - anchorOffsetPx <= 幅 - markerX)。
         // 実際に試すと、総幅は収まっているのに右側がステージ外に出るカードが 34 件出た。
-        <div className="relative w-full text-center">
+        <div
+          className="relative w-full text-center"
+          style={
+            // 未開始のカードは沈めて、目を「始め方」の案内に向ける。
+            idle ? { filter: 'grayscale(1)', opacity: 0.32, transition: 'opacity .25s' } : undefined
+          }
+        >
           <span aria-hidden className="absolute left-1/2 h-4 w-px" style={{ top: -30, background: 'var(--kg-mark)' }} />
           <span aria-hidden className="absolute left-1/2 h-4 w-px" style={{ bottom: -30, background: 'var(--kg-mark)' }} />
           {card?.fit.mode === 'scroll' ? (
@@ -109,6 +130,20 @@ export function CardStage(props: Props) {
               {card?.text ?? ''}
             </span>
           )}
+        </div>
+      )}
+
+      {idle && display.mode === 'card' && step?.kind !== 'summary' && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-[14%] grid justify-items-center gap-1.5 px-6 text-center">
+          <p className="m-0 text-sm font-medium">
+            <kbd className="rounded-sm border px-1.5 py-0.5 text-xs" style={{ borderColor: 'var(--kg-hair)' }}>
+              Space
+            </kbd>
+            {' か下の再生ボタンで始めます'}
+          </p>
+          <p className="m-0 text-xs" style={{ color: 'var(--kg-muted)' }}>
+            自分のペースで送るなら ← → 、止めると前後の文が出ます
+          </p>
         </div>
       )}
 
@@ -161,14 +196,12 @@ export function CardStage(props: Props) {
             文脈
           </div>
           <p
-            className="max-h-full max-w-[42em] overflow-y-auto text-[17px] leading-[2.05]"
-            style={{ overflowWrap: 'anywhere', color: 'var(--kg-muted)' }}
+            className="kg-jp-text max-h-full max-w-[42em] overflow-y-auto text-[17px] leading-[2.05]"
             dir="auto"
           >
             {(() => {
-              const s = sentences[card.sentenceId]
-              if (!s) return card.text
-              const p = contextParts(source, s, card)
+              if (!sentences[card.sentenceId]) return card.text
+              const p = contextParts(source, sentences, card, card.sentenceId)
               return (
                 <>
                   {p.head && '… '}
@@ -176,9 +209,9 @@ export function CardStage(props: Props) {
                   <mark
                     ref={markRef}
                     style={{
-                      background: 'color-mix(in srgb, var(--kg-mark) 20%, transparent)',
+                      background: 'color-mix(in srgb, var(--kg-mark) 22%, transparent)',
                       color: 'var(--kg-ink)',
-                      fontWeight: 500,
+                      fontWeight: 600,
                     }}
                   >
                     {p.mark}

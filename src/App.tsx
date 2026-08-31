@@ -20,14 +20,19 @@ const SAMPLE = `視覚的な情報処理において、人間の眼球は連続�
 export default function App() {
   const [settings, setSettings] = useState<Settings>(() => loadSettings())
   const [raw, setRaw] = useState('')
+  // 貼り付けるたびに性質が変わるので、この設定は持ち越さない。
+  const [fixPdfWrap, setFixPdfWrap] = useState(false)
   const [view, setView] = useState<'compose' | 'read'>('compose')
   const [panel, setPanel] = useState(false)
   const [help, setHelp] = useState(false)
   const [summaryProgress, setSummaryProgress] = useState<number | null>(null)
+  // 「まだ始めていない」は本文ごとに持つ。設定変更の組み直しでは source が
+  // 変わらないので、案内が読書中に出戻ることがない。
+  const [startedFor, setStartedFor] = useState<string | null>(null)
 
   const stageRef = useRef<HTMLDivElement>(null)
   const [container, setContainer] = useState<HTMLElement | null>(null)
-  const { state, setAnchor } = useDeck(view === 'read' ? raw : '', settings, container)
+  const { state, setAnchor } = useDeck(view === 'read' ? raw : '', settings, container, fixPdfWrap)
 
   const [pb, setPb] = useState(initial)
   const pbRef = useRef(pb)
@@ -63,7 +68,7 @@ export default function App() {
     // Kumo は light-dark() で色を解決し、モードは data-mode で決まる。
     // トークンを上書きするだけではコンポーネント側 (Button, Text, Switch) が
     // 明色のままになり、暗い背景で文字が潰れる。
-    const dark = settings.bg === 'navy' || settings.bg === 'sumi'
+    const dark = settings.bg === 'tetsukon' || settings.bg === 'sumi'
     el.dataset.mode = dark ? 'dark' : 'light'
     el.style.colorScheme = dark ? 'dark' : 'light'
   }, [settings.bg])
@@ -79,6 +84,10 @@ export default function App() {
   }, [state, dispatch])
 
   const ready = state.status === 'ready' ? state.deck : null
+  const started = !!ready && startedFor === ready.source
+  useEffect(() => {
+    if (ready && effectivePlaying(pb)) setStartedFor(ready.source)
+  }, [ready, pb])
   const step = ready?.steps[pb.stepIndex]
   const offset = ready ? progressOffset(step, ready.cards, ready.source.length) : 0
 
@@ -122,9 +131,17 @@ export default function App() {
       settings.reviewStrength, dispatch])
 
   // 詳細設定を開いたら再生を止める。ユーザーが「止めたい」と言ったわけではないので
-  // 文脈は出さない (停止ボタンとは意味が違う)。
+  // 文脈は出さない (停止ボタンとは意味が違う)。閉じたら元の再生状態に戻す
+  // — 設定を触るための中断であって、停止の意思表示ではないため。
+  const wasPlayingRef = useRef(false)
   useEffect(() => {
-    if (panel) dispatch({ type: 'SUSPEND' })
+    if (panel) {
+      wasPlayingRef.current = effectivePlaying(pbRef.current)
+      dispatch({ type: 'SUSPEND' })
+    } else if (wasPlayingRef.current) {
+      wasPlayingRef.current = false
+      dispatch({ type: 'PLAY' })
+    }
   }, [panel, dispatch])
 
   const seekStep = useCallback(
@@ -220,8 +237,8 @@ export default function App() {
           onChange={setRaw}
           onSample={() => setRaw(SAMPLE)}
           onRead={() => setView('read')}
-          fixPdfWrap={settings.fixPdfWrap}
-          onFixPdfWrapChange={(fixPdfWrap) => patch({ fixPdfWrap })}
+          fixPdfWrap={fixPdfWrap}
+          onFixPdfWrapChange={setFixPdfWrap}
         />
       ) : (
         <div className="flex flex-1 flex-col">
@@ -252,6 +269,7 @@ export default function App() {
                   sizePx={settings.sizePx}
                   letterSpacing={settings.letterSpacing}
                   dim={settings.dimSurround}
+                  idle={!started}
                   summaryProgress={summaryProgress}
                   onSummaryFocus={(on) => dispatch({ type: 'SUMMARY_FOCUS', on })}
                   onSummaryScroll={(on) => dispatch({ type: 'SUMMARY_SCROLL', on })}

@@ -41,13 +41,15 @@ export function InputPane({ value, onChange, onRead, onSample, fixPdfWrap, onFix
             className="min-h-[230px] w-full"
           />
         </Field>
-        <Switch
-          label="PDF の改行を取り除く"
-          labelTooltip="PDF などで文の途中に入ってしまう改行を取り除きます。詩や箇条書きでは行の区切りが失われるため、必要なときだけオンにしてください。"
-          controlFirst={false}
-          checked={fixPdfWrap}
-          onCheckedChange={onFixPdfWrapChange}
-        />
+        <div className="kg-tip">
+          <Switch
+            label="テキストの改行を取り除く"
+            labelTooltip="PDF などからコピーすると文の途中に残る改行をつなぎ、一文に戻します。改行そのものに意味がある詩や箇条書きでは、オフのままにしてください。"
+            controlFirst={false}
+            checked={fixPdfWrap}
+            onCheckedChange={onFixPdfWrapChange}
+          />
+        </div>
         <div className="flex flex-wrap items-center justify-end gap-2.5">
           <span
             className="mr-auto text-[11px] tabular-nums"

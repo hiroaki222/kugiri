@@ -5,7 +5,7 @@
 /* 背景プリセットは単なる背景の差し替えではなく実質的な独自テーマなので、
    canvas / base / line / 文字色 / brand 上の文字 / focus ring をセットで定義する。 */
 :root,
-[data-bg="hai"] {
+[data-bg="hakuji"] {
   --color-kumo-brand: #14479b;
   --color-kumo-brand-hover: #10397e;
   --color-kumo-canvas: #e9ece8;
@@ -14,30 +14,36 @@
   --color-kumo-line: #c7cec8;
   --color-kumo-hairline: #d8ded9;
   --color-kumo-default: #131820;
-  --color-kumo-secondary: #6b7780;
+  --color-kumo-secondary: #626e78;
   --color-kumo-focus: #14479b;
   --kg-paper: #e9ece8;
   --kg-panel: #f5f7f3;
   --kg-ink: #131820;
-  --kg-muted: #6b7780;
+  --kg-muted: #626e78;
   --kg-mark: #14479b;
   --kg-hair: #c7cec8;
 }
-[data-bg="kinari"] {
+
+/* 視線誘導の線。--kg-hair のような固定色だと「周辺を暗くする」で背景が沈んだとき
+   線と背景の明度が一致して消える。地の色に対する相対値で持つ。 */
+:root {
+  --kg-guide: color-mix(in srgb, var(--kg-ink) 24%, transparent);
+}
+[data-bg="gofun"] {
   --color-kumo-brand: #1b4fa0;
   --color-kumo-canvas: #f2efe8;
   --color-kumo-base: #f9f7f1;
   --color-kumo-line: #d6d0c4;
   --color-kumo-default: #1a1a17;
-  --color-kumo-secondary: #77736a;
+  --color-kumo-secondary: #6e6a61;
   --kg-paper: #f2efe8;
   --kg-panel: #f9f7f1;
   --kg-ink: #1a1a17;
-  --kg-muted: #77736a;
+  --kg-muted: #6e6a61;
   --kg-mark: #1b4fa0;
   --kg-hair: #d6d0c4;
 }
-[data-bg="navy"] {
+[data-bg="tetsukon"] {
   --color-kumo-brand: #7fa9e0;
   --color-kumo-canvas: #16202e;
   --color-kumo-base: #1d293a;
@@ -59,11 +65,11 @@
   --color-kumo-elevated: #2b2b2b;
   --color-kumo-line: #333;
   --color-kumo-default: #e4e2dc;
-  --color-kumo-secondary: #8b8880;
+  --color-kumo-secondary: #918e86;
   --kg-paper: #1a1a1a;
   --kg-panel: #232323;
   --kg-ink: #e4e2dc;
-  --kg-muted: #8b8880;
+  --kg-muted: #918e86;
   --kg-mark: #8fb0de;
   --kg-hair: #333;
 }
@@ -114,6 +120,10 @@ body {
 .kg-switch-row > div:has([role="switch"]) {
   grid-template-columns: 1fr auto;
 }
+/* Kumo の Label は text-base 固定。設定パネルのラベル階層 (14px) に揃える。 */
+.kg-switch-row label {
+  font-size: 0.875rem;
+}
 
 /* カードは絶対に折り返さない */
 .kg-card {
@@ -130,4 +140,23 @@ body {
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
   }
+}
+
+/* Kumo の Tooltip は max-w-[var(--available-width)] なので、長い説明文が画面幅
+   いっぱいの一本の帯になって読めない。読める幅で折り返させる。
+   data-side を持つ popup (tooltip・popover) だけが対象で、Dialog には当たらない。 */
+[data-base-ui-portal] [role="presentation"][data-side] {
+  max-width: min(23rem, var(--available-width));
+}
+[data-base-ui-portal] [role="presentation"][data-side] [data-base-ui-focusable] {
+  word-break: auto-phrase;
+  line-height: 1.7;
+}
+
+/* Kumo の Label は tooltip アイコンを inline のボタンで置くので、ベースラインに
+   揃って和文の字面の中心よりわずかに上に浮く。行の中心に合わせる。 */
+.kg-tip label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
 }

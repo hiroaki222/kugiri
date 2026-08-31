@@ -23,7 +23,13 @@ export type DeckState =
 /** 表示中の deck は常に「その deck を測ったときの書体」で描かれる。
  *  書体クラスの切り替えと新しい deck の commit を同一の更新で行うので、
  *  途中で書体が変わることが原理的に起きない。 */
-export function useDeck(raw: string, settings: Settings, container: HTMLElement | null) {
+/** fixPdfWrap は永続化しない設定なので Settings ではなく引数で受ける。 */
+export function useDeck(
+  raw: string,
+  settings: Settings,
+  container: HTMLElement | null,
+  fixPdfWrap: boolean,
+) {
   const [state, setState] = useState<DeckState>({ status: 'idle' })
   const genRef = useRef(0)
   const anchorRef = useRef(0)
@@ -34,14 +40,22 @@ export function useDeck(raw: string, settings: Settings, container: HTMLElement 
 
   const build = useCallback(
     async (resetAnchor: boolean) => {
-      if (!raw.trim() || !container) return
+      if (!container) return
+      // 入力画面に戻ったら deck を捨てる。ここで抜けるだけだと直前の deck が
+      // ready のまま残り、次に別の文章で読み始めたとき前のカードが出てしまう。
+      if (!raw.trim()) {
+        genRef.current++
+        anchorRef.current = 0
+        setState({ status: 'idle' })
+        return
+      }
       const gen = ++genRef.current
       if (resetAnchor) anchorRef.current = 0
       const anchor = anchorRef.current
       setState({ status: 'building' })
 
       try {
-        const source = prepareSource(raw, { fixPdfWrap: settings.fixPdfWrap })
+        const source = prepareSource(raw, { fixPdfWrap })
         if (!source.trim()) {
           setState({ status: 'idle' })
           return
@@ -101,18 +115,24 @@ export function useDeck(raw: string, settings: Settings, container: HTMLElement 
         })
       }
     },
-    [raw, container, settings.fixPdfWrap, settings.sizePx, settings.letterSpacing,
+    [raw, container, fixPdfWrap, settings.sizePx, settings.letterSpacing,
      settings.spanChars, settings.summaryOn, settings.summaryRatio],
   )
 
-  // PDF 補正は source そのものを変えるので、旧 offset を新 source に当てても
-  // 同じ内容を指さない。切り替えたときは先頭に戻す。
-  const pdfRef = useRef(settings.fixPdfWrap)
+  // 先頭に戻すのは source そのものが別物になったときだけ。
+  // PDF 補正は改行・空白を増減させるので、旧 offset を新 source に当てても
+  // 同じ内容を指さない。本文の入れ替えも同じ理由で復元できない。
+  // 同じ本文で読書画面に入り直したときは、読んでいた位置を保つ。
+  const pdfRef = useRef(fixPdfWrap)
+  const builtRawRef = useRef('')
   useEffect(() => {
-    const changed = pdfRef.current !== settings.fixPdfWrap
-    pdfRef.current = settings.fixPdfWrap
+    const changed =
+      pdfRef.current !== fixPdfWrap ||
+      (raw.trim() !== '' && builtRawRef.current !== raw)
+    pdfRef.current = fixPdfWrap
+    if (raw.trim() !== '') builtRawRef.current = raw
     void build(changed)
-  }, [build, settings.fixPdfWrap])
+  }, [build, raw, fixPdfWrap])
 
   return { state, setAnchor, rebuild: build }
 }

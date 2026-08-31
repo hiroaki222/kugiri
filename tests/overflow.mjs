@@ -28,8 +28,8 @@ for (const vp of VIEWPORTS) {
     await page.addInitScript((s) => {
       localStorage.setItem('kugiri.settings', JSON.stringify({
         v: 1, sizePx: s.sizePx, letterSpacing: s.ls, spanChars: s.span,
-        bg: 'hai', cpm: 1200, summaryOn: true, summaryRatio: 0.4,
-        fixPdfWrap: false, dimSurround: false,
+        bg: 'hakuji', cpm: 1200, summaryOn: true, summaryRatio: 0.4,
+        dimSurround: false,
       }))
     }, st)
     await page.goto('http://localhost:3000/')
