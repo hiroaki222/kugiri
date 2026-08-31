@@ -56,17 +56,7 @@
         </header>
         <div style="display: grid; flex: 1; place-items: center">
           <div class="kg-boot" style="display: grid; justify-items: center; gap: 12px">
-            <div
-              class="kg-indeterminate"
-              style="
-                position: relative;
-                height: 3px;
-                width: min(260px, 60vw);
-                overflow: hidden;
-                border-radius: 999px;
-                background: color-mix(in srgb, var(--kg-mark) 14%, transparent);
-              "
-            ></div>
+            <div class="kg-spinner"></div>
             <!-- Repeated from src/i18n rather than imported: this has to render
                  before any module is loaded. -->
             <p style="margin: 0; font-size: 14px; color: var(--kg-muted)">読み込んでいます…</p>

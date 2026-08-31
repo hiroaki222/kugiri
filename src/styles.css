@@ -201,29 +201,20 @@ body {
   container-type: size;
 }
 
-/* Indeterminate progress while the deck is being built. */
-@keyframes kg-indeterminate {
-  0% {
-    transform: translateX(-110%);
-  }
-  100% {
-    transform: translateX(320%);
+/* Loading indicator. The wait is subsets and a bundle arriving, neither of
+   which has an honest percentage, so it turns rather than fills. */
+@keyframes kg-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
-.kg-indeterminate::after {
-  content: '';
-  position: absolute;
-  inset-block: 0;
-  width: 32%;
-  border-radius: inherit;
-  background: var(--kg-mark);
-  animation: kg-indeterminate 1.15s ease-in-out infinite;
-}
-/* A frozen bar would read as finished, so it is removed rather than stopped. */
-@media (prefers-reduced-motion: reduce) {
-  .kg-indeterminate::after {
-    display: none;
-  }
+.kg-spinner {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2.5px solid color-mix(in srgb, var(--kg-mark) 18%, transparent);
+  border-top-color: var(--kg-mark);
+  animation: kg-spin 0.8s linear infinite;
 }
 
 /* The boot placeholder holds off for a moment: on a fast connection the bundle

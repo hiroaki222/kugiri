@@ -42,13 +42,8 @@ export function ReadingView({ state, playback, settings, onCpm, onContainer }: P
         {!ready && (
           <div className="grid flex-1 place-items-center">
             {state.status === 'building' && (
-              <div className="grid w-[min(260px,60vw)] justify-items-center gap-3">
-                {/* The wait is mostly typeface subsets arriving, which has no
-                    meaningful percentage, so the bar is indeterminate. */}
-                <div
-                  className="kg-indeterminate relative h-[3px] w-full overflow-hidden rounded-full"
-                  style={{ background: 'color-mix(in srgb, var(--kg-mark) 14%, transparent)' }}
-                />
+              <div className="grid justify-items-center gap-3">
+                <div className="kg-spinner" />
                 <p className="m-0 text-sm" style={{ color: 'var(--kg-muted)' }}>
                   {t.reading.building}
                 </p>
