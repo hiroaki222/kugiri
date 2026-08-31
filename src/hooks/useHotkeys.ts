@@ -34,8 +34,20 @@ export function useHotkeys(enabled: boolean, h: HotkeyHandlers) {
       // IME 変換中は無視。修飾キー併用は素通し。
       if (e.isComposing || e.metaKey || e.ctrlKey || e.altKey) return
       const t = e.target as Element | null
-      if (t?.closest?.(INTERACTIVE)) return
       const k = e.key
+      const blocked = t?.closest?.(INTERACTIVE)
+      if (blocked) {
+        // data-hotkeys-off は「矢印キーなどを本来の用途に渡す」ためのもので、
+        // 再生の切り替えまで殺す必要はない。文脈オーバーレイや長いカードを
+        // クリックしたあと Space が効かなくなるのを防ぐ。
+        // 文字を入力する要素では Space は本来の意味を持つので除外する。
+        const typing = blocked.matches('input, textarea, select, [contenteditable]')
+        if (!typing && (k === ' ' || e.code === 'Space')) {
+          e.preventDefault()
+          ref.current.togglePlay()
+        }
+        return
+      }
       const H = ref.current
 
       // K は Shift+k なので、小文字の処理より先に判定する
