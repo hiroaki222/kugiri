@@ -28,7 +28,7 @@ for (const vp of VIEWPORTS) {
     await page.addInitScript((s) => {
       localStorage.setItem('kugiri.settings', JSON.stringify({
         v: 1, sizePx: s.sizePx, letterSpacing: s.ls, spanChars: s.span,
-        bg: 'hakuji', cpm: 1200, summaryOn: true, summaryRatio: 0.4,
+        bg: 'light', cpm: 1200, summaryOn: true, summaryRatio: 0.4,
         dimSurround: false,
       }))
     }, st)

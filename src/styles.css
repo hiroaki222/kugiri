@@ -5,7 +5,7 @@
 /* 背景プリセットは単なる背景の差し替えではなく実質的な独自テーマなので、
    canvas / base / line / 文字色 / brand 上の文字 / focus ring をセットで定義する。 */
 :root,
-[data-bg="hakuji"] {
+[data-bg="light"] {
   --color-kumo-brand: #14479b;
   --color-kumo-brand-hover: #10397e;
   --color-kumo-canvas: #e9ece8;
@@ -29,7 +29,7 @@
 :root {
   --kg-guide: color-mix(in srgb, var(--kg-ink) 24%, transparent);
 }
-[data-bg="gofun"] {
+[data-bg="cream"] {
   --color-kumo-brand: #1b4fa0;
   --color-kumo-canvas: #f2efe8;
   --color-kumo-base: #f9f7f1;
@@ -43,7 +43,7 @@
   --kg-mark: #1b4fa0;
   --kg-hair: #d6d0c4;
 }
-[data-bg="tetsukon"] {
+[data-bg="navy"] {
   --color-kumo-brand: #7fa9e0;
   --color-kumo-canvas: #16202e;
   --color-kumo-base: #1d293a;
@@ -58,7 +58,7 @@
   --kg-mark: #7fa9e0;
   --kg-hair: #2e3d52;
 }
-[data-bg="sumi"] {
+[data-bg="black"] {
   --color-kumo-brand: #8fb0de;
   --color-kumo-canvas: #1a1a1a;
   --color-kumo-base: #232323;

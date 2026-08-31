@@ -9,19 +9,19 @@ type Props = {
   onClose: () => void
 }
 
-// 伝統色の名前で呼ぶ。同じ明度帯に2色あるので、名前だけでなくスウォッチと
-// チェックでも見分けられるようにしてある。
-const BG_LABEL: Record<string, string> = {
-  hakuji: '白磁',
-  gofun: '胡粉',
-  tetsukon: '鉄紺',
-  sumi: '墨',
-}
 const BG_SWATCH: Record<string, string> = {
-  hakuji: '#e9ece8',
-  gofun: '#f2efe8',
-  tetsukon: '#16202e',
-  sumi: '#1a1a1a',
+  light: '#e9ece8',
+  cream: '#f2efe8',
+  navy: '#16202e',
+  black: '#1a1a1a',
+}
+/** 見た目で選ぶものなので名前は出さない。読み上げには何か要るので、
+ *  色そのものを平たく言うだけの文字列を持つ。 */
+const BG_A11Y: Record<string, string> = {
+  light: '明るい灰',
+  cream: '明るいクリーム',
+  navy: '濃い紺',
+  black: '黒',
 }
 
 /** 操作名と現在値は本文色、補足だけを一段弱く。ラベルまで muted にすると
@@ -173,7 +173,7 @@ export function SettingsDrawer({ open, settings, onChange, onClose }: Props) {
               onChange={(spanChars) => onChange({ spanChars })}
               note="1枚に表示する文字数の目安です。初期値の7字は、一度に読み取りやすい範囲を基準にしています。"
             />
-            <Row label="背景色" value={BG_LABEL[settings.bg]}>
+            <Row label="背景色">
               <div className="flex flex-wrap gap-2">
                 {BACKGROUNDS.map((bg) => {
                   const on = settings.bg === bg
@@ -181,7 +181,7 @@ export function SettingsDrawer({ open, settings, onChange, onClose }: Props) {
                     <button
                       key={bg}
                       type="button"
-                      aria-label={BG_LABEL[bg]}
+                      aria-label={BG_A11Y[bg]}
                       aria-pressed={on}
                       onClick={() => onChange({ bg })}
                       // 選択を色だけで伝えない。枠は常に描き、選択中はリングとチェックを足す。
@@ -198,7 +198,7 @@ export function SettingsDrawer({ open, settings, onChange, onClose }: Props) {
                         <CheckIcon
                           size={16}
                           weight="bold"
-                          color={bg === 'tetsukon' || bg === 'sumi' ? '#e8ecf2' : '#131820'}
+                          color={bg === 'navy' || bg === 'black' ? '#e8ecf2' : '#131820'}
                         />
                       )}
                     </button>

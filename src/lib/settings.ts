@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const BACKGROUNDS = ['hakuji', 'gofun', 'tetsukon', 'sumi'] as const
+export const BACKGROUNDS = ['light', 'cream', 'navy', 'black'] as const
 export type Background = (typeof BACKGROUNDS)[number]
 
 export const DEFAULTS = {
@@ -8,7 +8,7 @@ export const DEFAULTS = {
   sizePx: 30,
   letterSpacing: 0.02,
   spanChars: 7,
-  bg: 'hakuji' as Background,
+  bg: 'light' as Background,
   cpm: 1200,
   summaryOn: false,
   summaryRatio: 0.4,

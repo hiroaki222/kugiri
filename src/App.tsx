@@ -68,7 +68,7 @@ export default function App() {
     // Kumo は light-dark() で色を解決し、モードは data-mode で決まる。
     // トークンを上書きするだけではコンポーネント側 (Button, Text, Switch) が
     // 明色のままになり、暗い背景で文字が潰れる。
-    const dark = settings.bg === 'tetsukon' || settings.bg === 'sumi'
+    const dark = settings.bg === 'navy' || settings.bg === 'black'
     el.dataset.mode = dark ? 'dark' : 'light'
     el.style.colorScheme = dark ? 'dark' : 'light'
   }, [settings.bg])
