@@ -164,12 +164,14 @@ export function SettingsDrawer({ open, settings, onChange, onClose }: Props) {
           </div>
 
           <Group title="全文カード">
-            <Switch
-              label="文の終わりに全文を出す"
-              controlFirst={false}
-              checked={settings.summaryOn}
-              onCheckedChange={(summaryOn: boolean) => onChange({ summaryOn })}
-            />
+            <div className="kg-switch-row">
+              <Switch
+                label="文の終わりに全文を出す"
+                controlFirst={false}
+                checked={settings.summaryOn}
+                onCheckedChange={(summaryOn: boolean) => onChange({ summaryOn })}
+              />
+            </div>
             <Slider
               label="全文カードの長さ"
               value={settings.summaryRatio}
@@ -183,21 +185,25 @@ export function SettingsDrawer({ open, settings, onChange, onClose }: Props) {
           </Group>
 
           <Group title="表示">
-            <Switch
-              label="周辺を暗くする"
-              controlFirst={false}
-              checked={settings.dimSurround}
-              onCheckedChange={(dimSurround: boolean) => onChange({ dimSurround })}
-            />
+            <div className="kg-switch-row">
+              <Switch
+                label="周辺を暗くする"
+                controlFirst={false}
+                checked={settings.dimSurround}
+                onCheckedChange={(dimSurround: boolean) => onChange({ dimSurround })}
+              />
+            </div>
           </Group>
 
           <Group title="貼り付け">
-            <Switch
-              label="PDF の改行を補正する"
-              controlFirst={false}
-              checked={settings.fixPdfWrap}
-              onCheckedChange={(fixPdfWrap: boolean) => onChange({ fixPdfWrap })}
-            />
+            <div className="kg-switch-row">
+              <Switch
+                label="PDF の改行を補正する"
+                controlFirst={false}
+                checked={settings.fixPdfWrap}
+                onCheckedChange={(fixPdfWrap: boolean) => onChange({ fixPdfWrap })}
+              />
+            </div>
             <p className="m-0 text-[11.5px] leading-relaxed" style={{ color: 'var(--kg-muted)' }}>
               論文などで文の途中に入る改行をつなぎます。詩や箇条書きでは意味が変わるので、
               必要なときだけ入れてください。

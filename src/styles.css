@@ -68,13 +68,14 @@
   --kg-hair: #333;
 }
 
-@font-face {
-  font-family: "Noto Sans JP";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("/fonts/noto-sans-jp.woff2") format("woff2");
-}
+/* Noto Sans JP は unicode-range 分割の woff2 一式を同梱している (124 サブセット)。
+   @font-face は public/fonts/noto-sans-jp.css にあり index.html から読む
+   (CSS の @import はビルド時に解決されるので public を参照できない)。
+   実際に表示された範囲だけが取得されるので初回転送は本文次第。
+   「常用漢字だけのサブセット」にはしない — 任意の文章を貼る前提なので、
+   未収録漢字が必ず出て OS のフォントにフォールバックしてしまう。
+   目的は第三者フォント CDN に依存しないこと (同一オリジン配信) であって、
+   ネットワーク非依存でも全環境で同一寸法でもない。 */
 
 html,
 body,
@@ -97,6 +98,13 @@ body {
 
 .kg-type {
   font-feature-settings: "palt";
+}
+
+/* Kumo の Switch は grid-cols-[auto_1fr] でラベルが auto、スイッチが 1fr なので
+   スイッチがラベルのすぐ横に来る。設定 UI の慣習に合わせて右端固定にする。
+   Kumo 側の has-[...] と同じ詳細度で当てるため :has() を使う (!important は使わない)。 */
+.kg-switch-row > div:has([role="switch"]) {
+  grid-template-columns: 1fr auto;
 }
 
 /* カードは絶対に折り返さない */
