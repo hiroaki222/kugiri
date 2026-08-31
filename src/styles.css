@@ -1,0 +1,117 @@
+@source "../node_modules/@cloudflare/kumo/dist/**/*.{js,jsx,ts,tsx}";
+@import "@cloudflare/kumo/styles";
+@import "tailwindcss";
+
+/* 背景プリセットは単なる背景の差し替えではなく実質的な独自テーマなので、
+   canvas / base / line / 文字色 / brand 上の文字 / focus ring をセットで定義する。 */
+:root,
+[data-bg="hai"] {
+  --color-kumo-brand: #14479b;
+  --color-kumo-brand-hover: #10397e;
+  --color-kumo-canvas: #e9ece8;
+  --color-kumo-base: #f5f7f3;
+  --color-kumo-elevated: #fbfcfa;
+  --color-kumo-line: #c7cec8;
+  --color-kumo-hairline: #d8ded9;
+  --color-kumo-default: #131820;
+  --color-kumo-secondary: #6b7780;
+  --color-kumo-focus: #14479b;
+  --kg-paper: #e9ece8;
+  --kg-panel: #f5f7f3;
+  --kg-ink: #131820;
+  --kg-muted: #6b7780;
+  --kg-mark: #14479b;
+  --kg-hair: #c7cec8;
+}
+[data-bg="kinari"] {
+  --color-kumo-brand: #1b4fa0;
+  --color-kumo-canvas: #f2efe8;
+  --color-kumo-base: #f9f7f1;
+  --color-kumo-line: #d6d0c4;
+  --color-kumo-default: #1a1a17;
+  --color-kumo-secondary: #77736a;
+  --kg-paper: #f2efe8;
+  --kg-panel: #f9f7f1;
+  --kg-ink: #1a1a17;
+  --kg-muted: #77736a;
+  --kg-mark: #1b4fa0;
+  --kg-hair: #d6d0c4;
+}
+[data-bg="navy"] {
+  --color-kumo-brand: #7fa9e0;
+  --color-kumo-canvas: #16202e;
+  --color-kumo-base: #1d293a;
+  --color-kumo-elevated: #243247;
+  --color-kumo-line: #2e3d52;
+  --color-kumo-default: #dde4ec;
+  --color-kumo-secondary: #8496ab;
+  --kg-paper: #16202e;
+  --kg-panel: #1d293a;
+  --kg-ink: #dde4ec;
+  --kg-muted: #8496ab;
+  --kg-mark: #7fa9e0;
+  --kg-hair: #2e3d52;
+}
+[data-bg="sumi"] {
+  --color-kumo-brand: #8fb0de;
+  --color-kumo-canvas: #1a1a1a;
+  --color-kumo-base: #232323;
+  --color-kumo-elevated: #2b2b2b;
+  --color-kumo-line: #333;
+  --color-kumo-default: #e4e2dc;
+  --color-kumo-secondary: #8b8880;
+  --kg-paper: #1a1a1a;
+  --kg-panel: #232323;
+  --kg-ink: #e4e2dc;
+  --kg-muted: #8b8880;
+  --kg-mark: #8fb0de;
+  --kg-hair: #333;
+}
+
+@font-face {
+  font-family: "Noto Sans JP";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/noto-sans-jp.woff2") format("woff2");
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+body {
+  margin: 0;
+  background: var(--kg-paper);
+  color: var(--kg-ink);
+  font-family: "Noto Sans JP", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+/* ロードに失敗したら Noto を含まない stack に切り替える。CSS に残したままだと
+   遅れて利用可能になった時点でブラウザが自動で切り替えて測定結果が古くなる。 */
+[data-font="fallback"] body,
+[data-font="fallback"] .kg-type {
+  font-family: system-ui, -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif;
+}
+
+.kg-type {
+  font-feature-settings: "palt";
+}
+
+/* カードは絶対に折り返さない */
+.kg-card {
+  white-space: nowrap;
+  display: inline-block;
+  max-width: none;
+  padding: 0.42em 0.55em;
+  line-height: 1.5;
+  background: var(--kg-panel);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

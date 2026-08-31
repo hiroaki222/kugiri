@@ -1,0 +1,58 @@
+import { Banner, Button, Field, InputArea } from '@cloudflare/kumo'
+
+const RAW_LIMIT = 100_000
+
+type Props = {
+  value: string
+  onChange: (v: string) => void
+  onRead: () => void
+  onSample: () => void
+}
+
+export function InputPane({ value, onChange, onRead, onSample }: Props) {
+  const len = value.trim().length
+  const tooLong = len > RAW_LIMIT
+
+  return (
+    <main className="grid flex-1 place-items-center px-5 py-9">
+      <div className="grid w-full max-w-[720px] gap-4">
+        <h1 className="m-0 text-[clamp(21px,3.4vw,27px)] font-bold leading-snug text-balance">
+          読みたい文章を貼ると、<em className="not-italic" style={{ color: 'var(--kg-mark)' }}>一目で読める大きさ</em>に区切ります
+        </h1>
+        <p className="m-0 text-sm leading-loose" style={{ color: 'var(--kg-muted)' }}>
+          日本語と英語に対応。本文はこの端末の中だけで処理され、どこへも送信されません。
+        </p>
+        {tooLong && (
+          <Banner
+            variant="alert"
+            title="長すぎます"
+            description={`${RAW_LIMIT.toLocaleString()} 字までにしてください。分けて読むと快適です。`}
+          />
+        )}
+        <Field label="本文" hideLabel>
+          <InputArea
+            value={value}
+            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => onChange(e.target.value)}
+            placeholder="ここに貼り付け"
+            spellCheck={false}
+            className="min-h-[230px] w-full"
+          />
+        </Field>
+        <div className="flex flex-wrap items-center justify-end gap-2.5">
+          <span
+            className="mr-auto text-[11px] tabular-nums"
+            style={{ color: 'var(--kg-muted)' }}
+          >
+            {len.toLocaleString()} 字
+          </span>
+          <Button variant="secondary" onClick={onSample}>
+            サンプルを入れる
+          </Button>
+          <Button variant="primary" onClick={onRead} disabled={len === 0 || tooLong}>
+            読む
+          </Button>
+        </div>
+      </div>
+    </main>
+  )
+}

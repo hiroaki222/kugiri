@@ -13,7 +13,6 @@ export const DEFAULTS = {
   summaryOn: true,
   summaryRatio: 0.4,
   fixPdfWrap: false,
-  anchorAligned: true,
   dimSurround: false,
 }
 export type Settings = typeof DEFAULTS
@@ -33,7 +32,6 @@ const schema = z.object({
   summaryOn: z.boolean().catch(DEFAULTS.summaryOn),
   summaryRatio: clamped(0.1, 1.2, DEFAULTS.summaryRatio),
   fixPdfWrap: z.boolean().catch(DEFAULTS.fixPdfWrap),
-  anchorAligned: z.boolean().catch(DEFAULTS.anchorAligned),
   dimSurround: z.boolean().catch(DEFAULTS.dimSurround),
 })
 
