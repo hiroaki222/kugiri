@@ -1,0 +1,33 @@
+{
+  "name": "kugiri",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev --port 3000",
+    "build": "vite build",
+    "serve": "vite preview",
+    "deploy": "bun run build && wrangler deploy",
+    "lint": "oxlint",
+    "test": "vitest run",
+    "test:browser": "vitest run --browser",
+    "bench": "vitest bench --run"
+  },
+  "dependencies": {
+    "budoux": "^0.9.1",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.4.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "@vitejs/plugin-react": "^6.1.1",
+    "oxlint": "^1.80.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.9",
+    "vite": "^8.2.2",
+    "vitest": "^4.1.11",
+    "wrangler": "^4.127.1"
+  }
+}
