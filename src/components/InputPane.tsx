@@ -1,4 +1,4 @@
-import { Banner, Button, Field, InputArea } from '@cloudflare/kumo'
+import { Banner, Button, Field, InputArea, Switch } from '@cloudflare/kumo'
 
 const RAW_LIMIT = 100_000
 
@@ -7,9 +7,12 @@ type Props = {
   onChange: (v: string) => void
   onRead: () => void
   onSample: () => void
+  /** 貼り付けたテキストの性質に関する設定なので、読書中の設定ではなくここに置く。 */
+  fixPdfWrap: boolean
+  onFixPdfWrapChange: (v: boolean) => void
 }
 
-export function InputPane({ value, onChange, onRead, onSample }: Props) {
+export function InputPane({ value, onChange, onRead, onSample, fixPdfWrap, onFixPdfWrapChange }: Props) {
   const len = value.trim().length
   const tooLong = len > RAW_LIMIT
 
@@ -38,6 +41,26 @@ export function InputPane({ value, onChange, onRead, onSample }: Props) {
             className="min-h-[230px] w-full"
           />
         </Field>
+        <div
+          className="rounded-md border px-4 py-3"
+          style={{ borderColor: 'var(--kg-hair)', background: 'var(--kg-panel)' }}
+        >
+          <div className="kg-switch-row">
+            <Switch
+              label="PDF の改行を取り除く"
+              controlFirst={false}
+              checked={fixPdfWrap}
+              onCheckedChange={onFixPdfWrapChange}
+            />
+          </div>
+          <p
+            className="kg-jp-text m-0 mt-1.5 text-[11.5px] leading-relaxed"
+            style={{ color: 'var(--kg-muted)' }}
+          >
+            PDF などで文の途中に入ってしまう改行を取り除きます。詩や箇条書きでは
+            行の区切りが失われるため、必要なときだけオンにしてください。
+          </p>
+        </div>
         <div className="flex flex-wrap items-center justify-end gap-2.5">
           <span
             className="mr-auto text-[11px] tabular-nums"

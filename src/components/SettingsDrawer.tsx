@@ -212,21 +212,6 @@ export function SettingsDrawer({ open, settings, onChange, onClose }: Props) {
             </div>
           </Group>
 
-          <Group title="貼り付け">
-            <div className="kg-switch-row">
-              <Switch
-                label="PDF の改行を取り除く"
-                controlFirst={false}
-                checked={settings.fixPdfWrap}
-                onCheckedChange={(fixPdfWrap: boolean) => onChange({ fixPdfWrap })}
-              />
-            </div>
-            <p className="kg-jp-text m-0 text-[11.5px] leading-relaxed" style={{ color: 'var(--kg-muted)' }}>
-              PDF などで文の途中に入ってしまう改行を取り除きます。詩や箇条書きでは
-              行の区切りが失われるため、必要なときだけオンにしてください。
-            </p>
-          </Group>
-
           <Group title="速度">
             <div className="grid gap-2">
               <div className="flex items-baseline justify-between gap-3">

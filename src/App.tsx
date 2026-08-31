@@ -220,6 +220,8 @@ export default function App() {
           onChange={setRaw}
           onSample={() => setRaw(SAMPLE)}
           onRead={() => setView('read')}
+          fixPdfWrap={settings.fixPdfWrap}
+          onFixPdfWrapChange={(fixPdfWrap) => patch({ fixPdfWrap })}
         />
       ) : (
         <div className="flex flex-1 flex-col">
