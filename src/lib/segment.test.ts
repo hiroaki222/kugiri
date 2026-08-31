@@ -4,7 +4,7 @@ import { splitSentences } from './sentences'
 import { tokenize } from './tokenize'
 import { visualWidth } from './width'
 
-/** 等幅を仮定した偽 measure。アルゴリズムの単体テストは DOM に依存させない。 */
+/** A fake monospace measure, so the algorithm can be tested without a DOM. */
 const measure = (t: string) => visualWidth(t) * 10
 
 function fakeMetrics(source: string, spanChars = 7) {
@@ -33,31 +33,32 @@ const SAMPLES = [
   '事前学習済モデルは重要である。'.normalize('NFD'),
 ]
 
-describe('不変条件', () => {
-  it.each(SAMPLES)('完全被覆と復元: %s', (raw) => {
+describe('invariants', () => {
+  it.each(SAMPLES)('covers the source completely and restores from offsets: %s', (raw) => {
     const r = run(raw)
-    // 3. 復元
+    // Invariant 3: restore from offsets.
     for (const d of r.drafts) {
       expect(r.source.slice(d.sourceStart, d.sourceEnd)).toBe(
         r.source.slice(d.sourceStart, d.sourceEnd),
       )
       expect(d.sourceEnd).toBeGreaterThan(d.sourceStart)
     }
-    // 1+2. 先頭から末尾まで、カードと gap を交互に辿って source 全体に一致する
+    // Invariants 1 and 2: walking cards and gaps from start to end covers the
+    // whole source, and every gap is whitespace.
     let cur = 0
     for (const d of r.drafts) {
       expect(d.sourceStart).toBeGreaterThanOrEqual(cur)
-      expect(r.source.slice(cur, d.sourceStart).trim()).toBe('') // gap は空白だけ
+      expect(r.source.slice(cur, d.sourceStart).trim()).toBe('') 
       cur = d.sourceEnd
     }
     expect(r.source.slice(cur).trim()).toBe('')
   })
 
-  it.each(SAMPLES)('空カードが無い: %s', (raw) => {
+  it.each(SAMPLES)('no empty cards: %s', (raw) => {
     for (const t of cardTexts(run(raw))) expect(t.trim()).not.toBe('')
   })
 
-  it.each(SAMPLES)('カードは文境界を跨がない: %s', (raw) => {
+  it.each(SAMPLES)('no card crosses a sentence boundary: %s', (raw) => {
     const r = run(raw)
     for (const d of r.drafts) {
       const s = r.sentences[d.sentenceId]
@@ -66,7 +67,7 @@ describe('不変条件', () => {
     }
   })
 
-  it('NFD の濁点が千切れない', () => {
+  it('a decomposed dakuten is never torn off its base', () => {
     const r = run('事前学習済モデルは重要である。'.normalize('NFD'))
     for (const t of cardTexts(r)) expect(t).not.toMatch(/^[゙゚]/)
     expect(cardTexts(r).join('')).toContain('モデル')
@@ -76,22 +77,22 @@ describe('不変条件', () => {
 const sents = (s: string) =>
   splitSentences(s, { start: 0, end: s.length }).map((x) => s.slice(x.start, x.end).trim())
 
-describe('文分割', () => {
-  it('埋め込み引用では割らない', () => {
+describe('sentence splitting', () => {
+  it('does not split an embedded quotation', () => {
     expect(sents('彼は「そうだ。」と言った。')).toEqual(['彼は「そうだ。」と言った。'])
     expect(sents('He said "Hi." Then he left.')).toEqual(['He said "Hi." Then he left.'])
   })
-  it('独立した引用は割る', () => {
+  it('splits between two standalone quotations', () => {
     expect(sents('「はい。」「いいえ。」')).toEqual(['「はい。」', '「いいえ。」'])
   })
-  it('小数・ドメイン・略語を守る', () => {
+  it('keeps decimals, domains and initials intact', () => {
     expect(sents('3.14 は円周率。')).toEqual(['3.14 は円周率。'])
     expect(sents('See e.g. foo and Fig. 3 here. Next.')).toEqual([
       'See e.g. foo and Fig. 3 here.',
       'Next.',
     ])
   })
-  it('既知の制約: Dr. Smith は誤分割する', () => {
+  it('known limitation: Dr. Smith is split wrongly', () => {
     expect(sents('Meet Dr. Smith today.').length).toBe(2)
   })
 })
@@ -99,53 +100,53 @@ describe('文分割', () => {
 const toks = (s: string, max = 14) =>
   tokenize(s, { start: 0, end: s.length }, [], max).map((t) => s.slice(t.start, t.end))
 
-describe('二次分割', () => {
-  it.each(['取り扱う', 'お問い合わせ', '食べられる'])('漢字⇄ひらがな境界では割らない: %s', (w) => {
+describe('secondary splitting', () => {
+  it.each(['取り扱う', 'お問い合わせ', '食べられる'])('never splits at a kanji-hiragana boundary: %s', (w) => {
     expect(toks(w)).toEqual([w])
   })
-  it('カタカナ⇄ひらがな境界では割る', () => {
+  it('splits at a katakana-hiragana boundary', () => {
     expect(toks('ブラックボックスである。')).toEqual(['ブラックボックス', 'である。'])
   })
 })
 
-describe('パッキング', () => {
-  it('助詞だけのカードを作らない', () => {
+describe('packing', () => {
+  it('never leaves a card holding only a particle', () => {
     const r = run(
       '視覚的な情報処理において、人間の眼球は連続的に文字列を追っているわけではない。',
     )
     for (const t of cardTexts(r)) expect(t.trim()).not.toMatch(/^(は|が|を|に|へ|と|で|も|や|の)$/)
   })
-  it('句読点だけのカードを作らない', () => {
+  it('never leaves a card holding only punctuation', () => {
     const r = run('停留と呼ばれる短い静止を繰り返している。実際にはサッケードである。')
     for (const t of cardTexts(r)) expect(t.trim()).not.toMatch(/^[、。，．]+$/)
   })
-  it('日本語のカードは知覚スパン前後に収まる', () => {
+  it('Japanese cards land around the perceptual span', () => {
     const r = run('視覚的な情報処理において、人間の眼球は連続的に文字列を追っている。')
     const ws = cardTexts(r).map(visualWidth)
-    expect(Math.max(...ws)).toBeLessThanOrEqual(28) // ideal 14 の 2倍以内
+    expect(Math.max(...ws)).toBeLessThanOrEqual(28) // within twice the ideal of 14
   })
-  it('知覚スパンを広げるとカードが減る', () => {
+  it('a wider perceptual span means fewer cards', () => {
     const raw = '視覚的な情報処理において、人間の眼球は連続的に文字列を追っているわけではない。'
     expect(run(raw, 12).drafts.length).toBeLessThan(run(raw, 4).drafts.length)
   })
 })
 
-describe('正規化', () => {
-  it('PDF 補正でハイフンを消さない', () => {
-    expect(prepareSource('This is well-\nknown here.', { fixPdfWrap: true })).toBe(
+describe('normalisation', () => {
+  it('unwrapping keeps the hyphen', () => {
+    expect(prepareSource('This is well-\nknown here.', { unwrap: true })).toBe(
       'This is well-known here.',
     )
   })
-  it('段落は空行で切る', () => {
+  it('a blank line ends a paragraph', () => {
     expect(prepareSource('一行目。\n続き。\n\n次の段落。')).toBe('一行目。続き。\n\n次の段落。')
   })
-  it('ZWJ 絵文字を分解しない', () => {
+  it('a ZWJ emoji is never taken apart', () => {
     expect(prepareSource('家族👨‍👩‍👧‍👦です。')).toContain('👨‍👩‍👧‍👦')
   })
 })
 
-describe('空入力', () => {
-  it.each(['', '   ', '\n\n\n'])('カード0枚: %j', (raw) => {
+describe('empty input', () => {
+  it.each(['', '   ', '\n\n\n'])('no cards at all: %j', (raw) => {
     expect(run(raw).drafts.length).toBe(0)
   })
 })

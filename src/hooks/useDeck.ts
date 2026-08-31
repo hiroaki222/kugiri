@@ -20,15 +20,17 @@ export type DeckState =
   | { status: 'ready'; deck: Deck; restoreStep: number }
   | { status: 'error'; message: string }
 
-/** 表示中の deck は常に「その deck を測ったときの書体」で描かれる。
- *  書体クラスの切り替えと新しい deck の commit を同一の更新で行うので、
- *  途中で書体が変わることが原理的に起きない。 */
-/** fixPdfWrap は永続化しない設定なので Settings ではなく引数で受ける。 */
+/** A deck is always drawn in the typeface it was measured in: the font class
+ *  and the deck are committed in the same update, so the face cannot change
+ *  underneath a deck that has already been laid out.
+ *
+ *  unwrap arrives as an argument rather than through Settings because it is
+ *  not persisted; it describes the text that was just pasted. */
 export function useDeck(
   raw: string,
   settings: Settings,
   container: HTMLElement | null,
-  fixPdfWrap: boolean,
+  unwrap: boolean,
 ) {
   const [state, setState] = useState<DeckState>({ status: 'idle' })
   const genRef = useRef(0)
@@ -41,8 +43,9 @@ export function useDeck(
   const build = useCallback(
     async (resetAnchor: boolean) => {
       if (!container) return
-      // 入力画面に戻ったら deck を捨てる。ここで抜けるだけだと直前の deck が
-      // ready のまま残り、次に別の文章で読み始めたとき前のカードが出てしまう。
+      // Leaving the reading view throws the deck away. Returning early instead
+      // would leave the previous deck ready, and its cards would appear when a
+      // different text is opened next.
       if (!raw.trim()) {
         genRef.current++
         anchorRef.current = 0
@@ -55,7 +58,7 @@ export function useDeck(
       setState({ status: 'building' })
 
       try {
-        const source = prepareSource(raw, { fixPdfWrap })
+        const source = prepareSource(raw, { unwrap })
         if (!source.trim()) {
           setState({ status: 'idle' })
           return
@@ -85,8 +88,9 @@ export function useDeck(
           spanChars: settings.spanChars,
         })
 
-        // 位置の復元。card.sourceStart <= anchor < card.sourceEnd のカードへ。
-        // gap に落ちたら次のカード、文書末を超えたら最終カード。
+        // Restore the position: the card whose span contains the anchor, the
+        // next card if the anchor fell in a gap, the last card if it is past
+        // the end.
         let cardIndex = cards.findIndex((c) => anchor >= c.sourceStart && anchor < c.sourceEnd)
         if (cardIndex < 0) cardIndex = cards.findIndex((c) => c.sourceStart >= anchor)
         if (cardIndex < 0) cardIndex = cards.length - 1
@@ -115,24 +119,24 @@ export function useDeck(
         })
       }
     },
-    [raw, container, fixPdfWrap, settings.sizePx, settings.letterSpacing,
+    [raw, container, unwrap, settings.sizePx, settings.letterSpacing,
      settings.spanChars, settings.summaryOn, settings.summaryRatio],
   )
 
-  // 先頭に戻すのは source そのものが別物になったときだけ。
-  // PDF 補正は改行・空白を増減させるので、旧 offset を新 source に当てても
-  // 同じ内容を指さない。本文の入れ替えも同じ理由で復元できない。
-  // 同じ本文で読書画面に入り直したときは、読んでいた位置を保つ。
-  const pdfRef = useRef(fixPdfWrap)
+  // Only a genuinely different source goes back to the start. Unwrapping adds
+  // and removes characters, so an old offset points somewhere else entirely in
+  // the new text, and replacing the body text has the same problem. Re-entering
+  // the reading view with the same text keeps the position.
+  const unwrapRef = useRef(unwrap)
   const builtRawRef = useRef('')
   useEffect(() => {
     const changed =
-      pdfRef.current !== fixPdfWrap ||
+      unwrapRef.current !== unwrap ||
       (raw.trim() !== '' && builtRawRef.current !== raw)
-    pdfRef.current = fixPdfWrap
+    unwrapRef.current = unwrap
     if (raw.trim() !== '') builtRawRef.current = raw
     void build(changed)
-  }, [build, raw, fixPdfWrap])
+  }, [build, raw, unwrap])
 
   return { state, setAnchor, rebuild: build }
 }

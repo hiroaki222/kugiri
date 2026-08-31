@@ -13,7 +13,7 @@ export type Card = {
   paragraphId: number
   isSentenceEnd: boolean
   isParagraphEnd: boolean
-  /** visual width。滞留時間の計算専用。 */
+  /** Visual width, used only to time the card. */
   width: number
   measuredPx: number
   fit: CardFit
@@ -22,12 +22,13 @@ export type Card = {
 export type RepairDeps = {
   hardMaxPx: number
   exactWidth: (texts: string[]) => number[]
-  /** バッチ境界で呼ぶ。false なら打ち切って null を返す。
-   *  gen を数値で渡しても「今の世代」を観測できないので述語を渡す。 */
+  /** Asked at every batch boundary; false abandons the work and returns null.
+   *  A predicate rather than a generation number, because a number passed in
+   *  cannot tell us what the current generation has since become. */
   isCurrent: () => boolean
-  /** テスト用。既定は 512 */
+  /** For tests. Defaults to 512. */
   batchSize?: number
-  /** バッチ境界で譲る。既定は requestAnimationFrame 相当 */
+  /** Yields at a batch boundary. Defaults to a frame. */
   yieldTo?: () => Promise<void>
 }
 
@@ -41,7 +42,7 @@ type Piece = {
   tokenStart: number
   tokenEnd: number
   draft: DraftCard
-  /** 分割で生まれた片のうち最後か (終端フラグを持つのは最後だけ) */
+  /** Last of the pieces a card was split into; only it carries the end flags. */
   isLast: boolean
 }
 
@@ -53,8 +54,9 @@ function trimmedSpan(source: string, a: number, b: number) {
 }
 
 /**
- * DP の結果を隠し DOM で測り直し、hardMaxPx を超えたカードを直す。
- * 責務は「絶対に収まる」ことだけで、品質の最適化は DP に任せる。
+ * Re-measures the packing against hidden DOM and fixes any card wider than
+ * hardMaxPx. Its only responsibility is that nothing overflows; quality is the
+ * packing's business.
  */
 export async function repair(p: Proposal, d: RepairDeps): Promise<Card[] | null> {
   const { source, tokens, drafts } = p
@@ -77,8 +79,9 @@ export async function repair(p: Proposal, d: RepairDeps): Promise<Card[] | null>
       sourceEnd: t.end,
       sentenceId: piece.draft.sentenceId,
       paragraphId: piece.draft.paragraphId,
-      // 終端フラグは最後の分割片にだけ移す。全片にコピーすると途中カードまで
-      // 文末扱いになり、滞留時間と全文カードの位置が壊れる。
+      // End flags move to the last piece only. Copying them onto every piece
+      // would make cards mid-sentence behave like sentence endings, throwing
+      // off both their timing and where summaries appear.
       isSentenceEnd: piece.isLast && piece.draft.isSentenceEnd,
       isParagraphEnd: piece.isLast && piece.draft.isParagraphEnd,
       width: visualWidth(text),
@@ -103,8 +106,8 @@ export async function repair(p: Proposal, d: RepairDeps): Promise<Card[] | null>
         })
         continue
       }
-      // 違反カード: 全 prefix を1回のバッチでまとめて実測する。
-      // 初回バッチで測ってあるのは DraftCard 全体だけで、prefix は未測定。
+      // Too wide: measure every prefix of it in one batch. The pass above only
+      // measured whole draft cards, so no prefix has been measured yet.
       let i = draft.tokenStart
       const end = draft.tokenEnd
       const parts: { s: number; e: number; px: number; fit: CardFit }[] = []
@@ -113,9 +116,9 @@ export async function repair(p: Proposal, d: RepairDeps): Promise<Card[] | null>
         for (let j = i + 1; j <= end; j++) cands.push(j)
         const texts = cands.map((j) => spanText(i, j))
         const ws = d.exactWidth(texts)
-        // 収まる prefix が1つ以上あれば最大の k を選ぶ。
-        // 1つも無いなら先頭トークンだけを scroll として確定する
-        // (単一トークンが超過しているなら「収まる候補」は存在しない)。
+        // Take the longest prefix that fits. If none does, the first token
+        // alone becomes a scrolling card: a single token wider than the
+        // stage means no fitting candidate exists at all.
         let best = -1
         for (let n = 0; n < cands.length; n++) if (ws[n] <= d.hardMaxPx) best = n
         if (best >= 0) {
@@ -147,7 +150,7 @@ export async function repair(p: Proposal, d: RepairDeps): Promise<Card[] | null>
   return out
 }
 
-/** 段落のカード範囲は repair が全部終わってから再計算する。 */
+/** Card ranges per paragraph, recomputed once repair has finished splitting. */
 export function paragraphRanges(cards: Card[], count: number) {
   const out = Array.from({ length: count }, (_, id) => ({ id, cardStart: -1, cardEnd: -1 }))
   cards.forEach((c, i) => {

@@ -11,11 +11,11 @@ const VIEWPORTS = [
   { name: 'phone-land', width: 740, height: 400 },
 ]
 const SETTINGS = [
-  { name: '既定', sizePx: 30, ls: 0.02, span: 7 },
-  { name: '最大サイズ', sizePx: 64, ls: 0.02, span: 7 },
-  { name: '最大字間', sizePx: 30, ls: 0.3, span: 7 },
-  { name: '広スパン', sizePx: 30, ls: 0.02, span: 14 },
-  { name: '狭スパン', sizePx: 18, ls: 0, span: 4 },
+  { name: 'default', sizePx: 30, ls: 0.02, span: 7 },
+  { name: 'largest text', sizePx: 64, ls: 0.02, span: 7 },
+  { name: 'widest spacing', sizePx: 30, ls: 0.3, span: 7 },
+  { name: 'wide span', sizePx: 30, ls: 0.02, span: 14 },
+  { name: 'narrow span', sizePx: 18, ls: 0, span: 4 },
 ]
 
 const browser = await chromium.launch()
@@ -38,8 +38,9 @@ for (const vp of VIEWPORTS) {
     await page.waitForSelector('.kg-card', { timeout: 15000 })
     await page.waitForTimeout(300)
 
-    // 全カードを順に送って、そのたびに矩形の包含を検査する。
-    // scrollWidth <= clientWidth は inline-block では常に真なので使えない。
+    // Step through every card and check the rectangles are contained.
+    // scrollWidth <= clientWidth is useless here: for an inline-block card it
+    // holds even when the card runs off its parent.
     const result = await page.evaluate(async () => {
       const bad = []
       let n = 0
@@ -50,7 +51,7 @@ for (const vp of VIEWPORTS) {
       for (let i = 0; i < 600; i++) {
         const card = document.querySelector('.kg-card')
         if (card) {
-          // 全文カードのときは .kg-card が無い。break せず送り続ける。
+          // A summary has no .kg-card; keep stepping rather than stopping.
           const stage = card.closest('.kg-type')
           const scroller = card.parentElement?.matches('[data-hotkeys-off]')
             ? card.parentElement
@@ -58,7 +59,8 @@ for (const vp of VIEWPORTS) {
           if (stage) {
             n++
             if (scroller) {
-              // 収まらないカードは横スクロール領域に隔離されていること (仕様どおりの例外)
+              // A card that does not fit must be isolated in a scrolling
+              // region, which is the one allowed exception.
               scrolls++
               const sb = scroller.getBoundingClientRect()
               const b = stage.getBoundingClientRect()
@@ -74,7 +76,7 @@ for (const vp of VIEWPORTS) {
             }
           }
         } else summaries++
-        // 末尾に着いたら止める
+        // Stop at the end.
         const slider = document.querySelector('[role="slider"]')
         const pct = Number(slider?.getAttribute('aria-valuenow') ?? -1)
         stuck = pct === lastPct ? stuck + 1 : 0
@@ -90,17 +92,17 @@ for (const vp of VIEWPORTS) {
     const tag = `${vp.name.padEnd(11)} ${st.name.padEnd(10)}`
     if (result.bad.length) {
       failures += result.bad.length
-      console.log(`❌ ${tag} ${result.n}枚中 ${result.bad.length}枚が溢れた`)
-      for (const b of result.bad.slice(0, 3)) console.log(`     "${b.text}" が ${b.over}px はみ出し`)
+      console.log(`FAIL ${tag} ${result.bad.length} of ${result.n} cards overflowed`)
+      for (const b of result.bad.slice(0, 3)) console.log(`     "${b.text}" overflowed by ${b.over}px`)
     } else {
       console.log(
-        `✅ ${tag} 通常 ${String(result.n - result.scrolls).padStart(3)}枚 + 全文 ${String(result.summaries).padStart(2)}枚` +
-          (result.scrolls ? ` + 横スクロール ${result.scrolls}枚` : '') + ' すべて収まった',
+        `ok   ${tag} ${String(result.n - result.scrolls).padStart(3)} cards + ${String(result.summaries).padStart(2)} summaries` +
+          (result.scrolls ? ` + ${result.scrolls} scrolling` : '') + ' all fit',
       )
     }
     await page.close()
   }
 }
 await browser.close()
-console.log(`\n${checked} 枚を検査 / 溢れ ${failures} 件`)
+console.log(`\n${checked} cards checked, ${failures} overflowing`)
 process.exit(failures ? 1 : 0)

@@ -6,15 +6,13 @@ type Props = {
   cards: Card[]
   paragraphs: { cardStart: number; cardEnd: number }[]
   sourceLength: number
-  /** 進捗表示用のオフセット。位置復元用の anchor とは別物。 */
+  /** The offset to display, which is not the anchor used to restore position. */
   offset: number
   onSeekOffset: (offset: number) => void
-  /** バーにフォーカスがあるときも Space で再生を切り替えられるようにする。
-   *  data-hotkeys-off でグローバルのキー処理から外しているため、ここで受ける。 */
 }
 
-/** Kumo に該当コンポーネントが無いので canvas で自前描画する。
- *  Meter はクリックで移動できず、カード単位の区切りも描けない。 */
+/** Drawn on a canvas because Kumo has nothing that fits: Meter cannot be
+ *  clicked to seek and cannot show a tick per card. */
 export function Progress({ cards, paragraphs, sourceLength, offset, onSeekOffset }: Props) {
   const ref = useRef<HTMLCanvasElement>(null)
   const pct = sourceLength > 0 ? Math.min(1, offset / sourceLength) : 0
@@ -26,7 +24,8 @@ export function Progress({ cards, paragraphs, sourceLength, offset, onSeekOffset
     const h = cv.clientHeight
     if (!w) return
     const dpr = devicePixelRatio || 1
-    // 描画: backing store を dpr 倍にして scale。以後は CSS ピクセルで描く。
+    // Scale the backing store by the device ratio once; everything below is
+    // then drawn in CSS pixels.
     cv.width = Math.round(w * dpr)
     cv.height = Math.round(h * dpr)
     const g = cv.getContext('2d')
@@ -52,12 +51,13 @@ export function Progress({ cards, paragraphs, sourceLength, offset, onSeekOffset
     g.fillRect(0, y, w * pct, bh)
     g.globalAlpha = 1
 
-    // カード1枚ごとの区切り。DOM が増えないので 1,000枚超でも潰れない。
+    // A tick per card. Nothing is added to the DOM, so a thousand cards still
+    // draw without collapsing.
     if (unit > 2.4) {
       g.fillStyle = panel
       for (let k = 1; k < cards.length; k++) g.fillRect(k * unit, y, 1, bh)
     }
-    // 段落の境目は背を高くして構造が読めるようにする
+    // Paragraph boundaries run taller, so the shape of the text is readable.
     g.fillStyle = mark
     g.globalAlpha = 0.75
     for (const p of paragraphs) if (p.cardStart > 0) g.fillRect(p.cardStart * unit, 1, 1, h - 2)
@@ -73,7 +73,7 @@ export function Progress({ cards, paragraphs, sourceLength, offset, onSeekOffset
     return () => ro.disconnect()
   }, [draw])
 
-  // hit test: PointerEvent の座標はすでに CSS ピクセルなので DPR は掛けない
+  // Hit testing: pointer coordinates are already CSS pixels, so no ratio here.
   const seekAt = (clientX: number) => {
     const cv = ref.current
     if (!cv) return
@@ -104,8 +104,8 @@ export function Progress({ cards, paragraphs, sourceLength, offset, onSeekOffset
         if (e.buttons === 1) seekAt(e.clientX)
       }}
       onKeyDown={(e) => {
-        // Space はここで扱わない。window 側のホットキーも同じ native イベントで
-        // 発火するので、両方が再生を切り替えると往復して何も起きなくなる。
+        // Space is deliberately absent. The window hotkey fires on the same
+        // native event, and two toggles in one press cancel out.
         const map: Record<string, () => void> = {
           ArrowLeft: () => step(-1),
           ArrowRight: () => step(1),

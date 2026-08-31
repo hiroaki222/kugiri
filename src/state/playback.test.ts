@@ -15,79 +15,79 @@ const scrollDeck: Deck = { steps: [card(0), card(10, true), card(20)] }
 const run = (events: Event[], d: Deck = deck, s: Playback = initial()) =>
   events.reduce((acc, e) => reduce(acc, e, d), s)
 
-/** 現在の世代で TIMER を撃つ */
+/** Fires TIMER for the current generation. */
 const tick = (s: Playback, d: Deck = deck) => reduce(s, { type: 'TIMER', gen: s.timerGen }, d)
 
-describe('基本', () => {
-  it('初期状態では文脈を出さない', () => {
+describe('basics', () => {
+  it('the initial state shows no context', () => {
     const s = initial()
     expect(s.display.mode).toBe('card')
     expect(effectivePlaying(s)).toBe(false)
   })
 
-  it('Space で再生開始、もう一度で停止', () => {
+  it('Space starts playback and stops it again', () => {
     const playing = run([{ type: 'PLAY' }])
     expect(effectivePlaying(playing)).toBe(true)
     const paused = reduce(playing, { type: 'PLAY' }, deck)
     expect(paused.intent).toBe('paused')
   })
 
-  it('停止したときだけ文脈が出る', () => {
+  it('context appears only on a deliberate stop', () => {
     const s = run([{ type: 'PLAY' }, { type: 'PAUSE_REQUEST' }])
     expect(s.display).toEqual({ mode: 'context', by: 'paused' })
   })
 
-  it('SUSPEND は文脈を出さずに止める (設定を開いたとき)', () => {
+  it('SUSPEND stops without showing context', () => {
     const s = run([{ type: 'PLAY' }, { type: 'SUSPEND' }])
     expect(s.intent).toBe('paused')
-    expect(s.display.mode).toBe('card') // PAUSE_REQUEST と違って文脈を出さない
+    expect(s.display.mode).toBe('card') // unlike PAUSE_REQUEST, no context
     expect(effectivePlaying(s)).toBe(false)
   })
 
-  it('末尾到達と Esc では文脈を出さない', () => {
+  it('reaching the end and pressing Esc show no context', () => {
     for (const type of ['REACHED_END', 'ESCAPE'] as const) {
       expect(run([{ type: 'PLAY' }, { type }]).display.mode).toBe('card')
     }
   })
 })
 
-describe('古いタイマーを捨てる', () => {
-  it('TIMER → SEEK → REBUILD → 古い TIMER が発火しても二重送りしない', () => {
+describe('discards stale timers', () => {
+  it('a stale TIMER after SEEK and REBUILD does not advance twice', () => {
     let s = run([{ type: 'PLAY' }])
     const staleGen = s.timerGen
     s = tick(s) // step 1
     s = reduce(s, { type: 'SEEK', target: 3, cause: 'key-card', direction: 1 }, deck)
     s = reduce(s, { type: 'REBUILD', stepIndex: 3 }, deck)
     const before = s.stepIndex
-    s = reduce(s, { type: 'TIMER', gen: staleGen }, deck) // 古い世代
-    expect(s.stepIndex).toBe(before) // 進まない
+    s = reduce(s, { type: 'TIMER', gen: staleGen }, deck) // stale generation
+    expect(s.stepIndex).toBe(before) // did not advance
   })
 
-  it('世代が合えば進む', () => {
+  it('advances when the generation matches', () => {
     let s = run([{ type: 'PLAY' }])
     s = tick(s)
     expect(s.stepIndex).toBe(1)
   })
 })
 
-describe('K (文脈) の押下', () => {
-  it('押している間はタイマーが止まる', () => {
+describe('holding K for context', () => {
+  it('the timer holds while the key is down', () => {
     let s = run([{ type: 'PLAY' }, { type: 'CONTEXT_DOWN' }])
     expect(effectivePlaying(s)).toBe(false)
-    expect(s.intent).toBe('playing') // 再生意図は変わらない
+    expect(s.intent).toBe('playing') // intent is untouched
     s = reduce(s, { type: 'CONTEXT_UP' }, deck)
     expect(effectivePlaying(s)).toBe(true)
   })
 
-  it('K down → blur → K up で文脈に貼り付かない', () => {
+  it('K down, blur, K up does not leave the context stuck open', () => {
     let s = run([{ type: 'PLAY' }, { type: 'CONTEXT_DOWN' }, { type: 'BLUR' }])
-    expect(s.display.mode).toBe('card') // blur で解除される
+    expect(s.display.mode).toBe('card') // blur releases it
     s = reduce(s, { type: 'CONTEXT_UP' }, deck)
     expect(s.display.mode).toBe('card')
     expect(effectivePlaying(s)).toBe(true)
   })
 
-  it('停止して出ている文脈は K を離しても blur でも消えない', () => {
+  it('context from a stop survives both the key release and a blur', () => {
     const paused = run([{ type: 'PLAY' }, { type: 'PAUSE_REQUEST' }])
     expect(reduce(paused, { type: 'CONTEXT_UP' }, deck).display).toEqual({
       mode: 'context',
@@ -99,29 +99,29 @@ describe('K (文脈) の押下', () => {
     })
   })
 
-  it('全文カードの表示中は文脈に遷移しない', () => {
+  it('no context while a summary is showing', () => {
     const s = run([{ type: 'SEEK', target: 4, cause: 'key-card', direction: 1 }])
     expect(s.display.mode).toBe('summary')
     expect(reduce(s, { type: 'CONTEXT_DOWN' }, deck).display.mode).toBe('summary')
   })
 })
 
-describe('全文カード', () => {
-  it('自動再生は全文カードで止まらない', () => {
+describe('summaries', () => {
+  it('playback does not stall on a summary', () => {
     let s = run([{ type: 'SEEK', target: 3, cause: 'key-card', direction: 1 }, { type: 'PLAY' }])
     s = tick(s)
     expect(s.stepIndex).toBe(4)
     expect(s.display.mode).toBe('summary')
-    expect(effectivePlaying(s)).toBe(true) // ← 永久停止しない
+    expect(effectivePlaying(s)).toBe(true) // does not stall here
     s = tick(s)
     expect(s.stepIndex).toBe(5)
   })
 
-  it('読んでいる最中 (focus / scroll) はタイマーが止まる', () => {
+  it('the timer holds while the summary is focused or scrolling', () => {
     let s = run([{ type: 'SEEK', target: 4, cause: 'key-card', direction: 1 }, { type: 'PLAY' }])
     s = reduce(s, { type: 'SUMMARY_FOCUS', on: true }, deck)
     expect(effectivePlaying(s)).toBe(false)
-    // フォーカスしたままスクロールを止めても再開しない (直交状態にした理由)
+    // still focused, so it stays paused - the reason these are separate flags
     s = reduce(s, { type: 'SUMMARY_SCROLL', on: true }, deck)
     s = reduce(s, { type: 'SUMMARY_SCROLL', on: false }, deck)
     expect(effectivePlaying(s)).toBe(false)
@@ -129,32 +129,32 @@ describe('全文カード', () => {
     expect(effectivePlaying(s)).toBe(true)
   })
 
-  it('停止して再開したときに再掲しない', () => {
+  it('resuming does not replay the summary', () => {
     let s = run([{ type: 'SEEK', target: 4, cause: 'key-card', direction: 1 }, { type: 'PLAY' }])
     s = reduce(s, { type: 'PAUSE_REQUEST' }, deck)
-    expect(s.display.mode).toBe('summary') // summary のまま止まる
+    expect(s.display.mode).toBe('summary') // stops on the summary itself
     s = reduce(s, { type: 'PLAY' }, deck)
     s = tick(s)
-    expect(s.stepIndex).toBe(5) // 同じ summary をもう一度出さずに次へ
+    expect(s.stepIndex).toBe(5) // moves on rather than replaying it
   })
 })
 
-describe('scroll カード', () => {
-  it('再生中に到達したら止まる', () => {
+describe('cards that must be scrolled', () => {
+  it('playback stops on arrival', () => {
     let s = run([{ type: 'PLAY' }], scrollDeck)
     s = tick(s, scrollDeck)
     expect(s.stepIndex).toBe(1)
     expect(s.scrollBlocked).toBe(true)
     expect(effectivePlaying(s)).toBe(false)
-    expect(s.intent).toBe('playing') // 再生意図は保たれる
+    expect(s.intent).toBe('playing') // playback intent survives
   })
 
-  it('手動で来たときは止まらない', () => {
+  it('arriving by hand does not block', () => {
     const s = run([{ type: 'SEEK', target: 1, cause: 'key-card', direction: 1 }], scrollDeck)
     expect(s.scrollBlocked).toBe(false)
   })
 
-  it('blocked 中の Space は解除して次へ進む (トグルではない)', () => {
+  it('Space on a blocked card releases and advances rather than toggling', () => {
     let s = run([{ type: 'PLAY' }], scrollDeck)
     s = tick(s, scrollDeck)
     s = reduce(s, { type: 'PLAY' }, scrollDeck)
@@ -163,7 +163,7 @@ describe('scroll カード', () => {
     expect(s.intent).toBe('playing')
   })
 
-  it('戻ってまた来たら再び止まる', () => {
+  it('coming back to it blocks again', () => {
     let s = run([{ type: 'PLAY' }], scrollDeck)
     s = tick(s, scrollDeck)
     s = reduce(s, { type: 'SEEK', target: 0, cause: 'key-card', direction: -1 }, scrollDeck)
@@ -173,8 +173,8 @@ describe('scroll カード', () => {
   })
 })
 
-describe('戻る操作', () => {
-  it('戻っても再生意図が保たれ、reviewing が付く', () => {
+describe('stepping backwards', () => {
+  it('stepping back keeps playback running and counts as a review', () => {
     let s = run([{ type: 'PLAY' }])
     s = tick(s)
     s = tick(s)
@@ -184,12 +184,12 @@ describe('戻る操作', () => {
     expect(effectivePlaying(s)).toBe(true)
   })
 
-  it('前進の seek には reviewing を付けない', () => {
+  it('seeking forward is not a review', () => {
     const s = run([{ type: 'PLAY' }, { type: 'SEEK', target: 3, cause: 'key-card', direction: 1 }])
     expect(s.reviewing).toBe(false)
   })
 
-  it('slider の seek には reviewing を付けない', () => {
+  it('seeking with the slider is not a review', () => {
     let s = run([{ type: 'PLAY' }])
     s = tick(s)
     s = tick(s)
@@ -197,25 +197,25 @@ describe('戻る操作', () => {
     expect(s.reviewing).toBe(false)
   })
 
-  it('長押し中は reviewing を付けず、離した時点で付ける', () => {
+  it('a held key reviews on release, not on every repeat', () => {
     let s = run([{ type: 'PLAY' }])
     s = tick(s)
     s = tick(s)
     s = reduce(s, { type: 'HOLD_START' }, deck)
     s = reduce(s, { type: 'SEEK', target: 1, cause: 'hold', direction: -1 }, deck)
-    expect(s.reviewing).toBe(false) // repeat のたびに3倍タイマーを張らない
+    expect(s.reviewing).toBe(false) // no long hold on every repeat
     s = reduce(s, { type: 'HOLD_END' }, deck)
     expect(s.reviewing).toBe(true)
   })
 })
 
-describe('位置のアンカー', () => {
-  it('移動したときだけ更新される', () => {
+describe('the position anchor', () => {
+  it('moves only when the reader does', () => {
     let s = run([{ type: 'SEEK', target: 2, cause: 'key-card', direction: 1 }])
     expect(s.sourceAnchor).toBe(20)
     const before = s.sourceAnchor
     s = reduce(s, { type: 'CONTEXT_DOWN' }, deck)
     s = reduce(s, { type: 'SUMMARY_FOCUS', on: true }, deck)
-    expect(s.sourceAnchor).toBe(before) // 表示の変化では動かない
+    expect(s.sourceAnchor).toBe(before) // a change of display does not move it
   })
 })

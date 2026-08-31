@@ -2,11 +2,13 @@ import { loadDefaultJapaneseParser } from 'budoux'
 import type { Span } from './sentences'
 import { graphemes, hasCJK, visualWidth } from './width'
 
-/** トークンは「文字列」ではなく source 上の half-open span として持つ。
- *  文字列を join('') するとトークン末尾の空白が落ちて `hello world` が
- *  `helloworld` になり、復元の不変条件を破る。 */
+/** A token is a half-open span over the source, never a string. Joining token
+ *  strings drops the trailing space of each one, turning `hello world` into
+ *  `helloworld` and breaking the invariant that a card can be restored from
+ *  its offsets. */
 export type Token = Span & {
-  /** 保護区間 (URL/メール)。分割してはいけない。表示理由は repair が決める。 */
+  /** A protected span (URL, address) that must never be split. Why it ends up
+   *  displayed the way it does is decided later, by repair. */
   atomic: boolean
 }
 
@@ -27,13 +29,14 @@ const kindOf = (c: string): Kind =>
   : 'o'
 
 /**
- * 長すぎる文節を二次分割する。BudouX の chunk は知覚スパンを普通に超える
- * (実際の論文で 30 chunk 中 3 個が幅14超、最大23)。
+ * Splits a phrase that came out too long. BudouX chunks routinely exceed the
+ * perceptual span: in a real paper, 3 of 30 chunks were wider than 14, the
+ * longest 23.
  *
- * ただし割ってよいのは高信頼な境界だけ: 空白 / 約物 / ラテン・CJK の境目。
- * かな・漢字・カタカナの間では割らない — 辞書が無い以上「漢字→ひらがなで
- * 切る」という一般規則と「取り扱う を割らない」は両立しないので、
- * 一般規則のほうを捨てる。
+ * Only high-confidence boundaries are used: whitespace, punctuation, and the
+ * seam between Latin and Japanese. Kanji-to-kana is not one of them. Without a
+ * dictionary, the general rule "break after kanji" and the expectation "do not
+ * break 取り扱う" cannot both hold, and the general rule is the one to drop.
  */
 function subsplit(source: string, tok: Span, maxWidth: number): Span[] {
   const text = source.slice(tok.start, tok.end)
@@ -52,11 +55,12 @@ function subsplit(source: string, tok: Span, maxWidth: number): Span[] {
     const a = kindOf(g[i - 1])
     const b = kindOf(g[i])
     if (a === b) continue
-    // カタカナ ⇄ ひらがな は自立語→付属語の境目とほぼ一致するので割ってよい
-    // (ブラックボックス|である)。漢字 ⇄ ひらがな は割らない — 取り扱う 食べられる が壊れる。
+    // Katakana next to hiragana almost always marks the seam between a content
+    // word and what attaches to it (ブラックボックス|である), so it is safe.
+    // Kanji next to hiragana is not: it breaks 取り扱う and 食べられる.
     const highConfidence =
       a === 's' || b === 's' || a === 'p' || b === 'p' ||
-      (a === 'a') !== (b === 'a') ||   // ラテン ⇄ 和文
+      (a === 'a') !== (b === 'a') || // Latin against Japanese
       (a === 'k' && b === 'h') || (a === 'h' && b === 'k')
     if (highConfidence) cuts.push(i)
   }
@@ -67,7 +71,8 @@ function subsplit(source: string, tok: Span, maxWidth: number): Span[] {
   for (const c of cuts) {
     const head = g.slice(s, c).join('')
     const tail = g.slice(c).join('')
-    // 記号だけの断片を作らない (句点1文字のカードが生まれる)
+    // Never leave a fragment of nothing but punctuation, which would show up
+    // as a card holding a single full stop.
     if (visualWidth(head) > 0 && !ONLY_PUNCT.test(tail) && visualWidth(head) >= maxWidth * 0.5) {
       out.push({ start: offs[s], end: offs[c] })
       s = c
@@ -83,8 +88,8 @@ function subsplit(source: string, tok: Span, maxWidth: number): Span[] {
 }
 
 /**
- * 文をトークン列にする。
- * 保護区間は不透明な1トークンとして扱い、その前後だけを BudouX に渡す。
+ * Turns a sentence into tokens. A protected span becomes one opaque token, and
+ * only the text around it is handed to BudouX.
  */
 export function tokenize(
   source: string,
@@ -103,13 +108,15 @@ export function tokenize(
     if (to <= from) return
     const text = source.slice(from, to)
     const chunks = hasCJK(text) ? getParser().parse(text) : [text]
-    // BudouX は文字列しか返さないので、返却順に単調に進むカーソルで
-    // 元テキストに突き合わせて span を復元する。indexOf は同じ語の反復で壊れる。
+    // BudouX returns strings, so spans are recovered with a cursor that only
+    // moves forward through the original text. Searching with indexOf breaks
+    // as soon as a word repeats.
     let c = from
     for (const chunk of chunks) {
-      // 英語句の再分割: chunk が空白を含むかだけで判定する
-      // \S+\s* だと先頭の空白を落とす。BudouX は " IAA モデルの" のように
-      // 先頭空白を保持して返すので、カーソルがずれて文字が欠ける。
+      // English inside a chunk is split again, decided purely by whether the
+      // chunk holds whitespace. The pattern has to keep the leading space:
+      // BudouX returns chunks like " IAA モデルの", and \S+\s* would drop it,
+      // sliding the cursor and swallowing characters.
       const parts = /\s/.test(chunk) ? (chunk.match(/\s*\S+\s*/g) ?? [chunk]) : [chunk]
       for (const part of parts) {
         const span = { start: c, end: c + part.length }

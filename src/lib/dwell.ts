@@ -1,20 +1,21 @@
 import type { Card } from './repair'
 
-/** カード切替の固定コスト (visual width 相当)。
- *  完全比例だと短いカードが知覚閾値以下で点滅するので下限を作る。 */
+/** Fixed cost of swapping a card, expressed as visual width. Time strictly
+ *  proportional to length makes short cards flash below the perceptual
+ *  threshold, so this sets a floor. */
 const BASE = 4
 
-/** cpm は「visual width / 分」。1 width あたり 60000/cpm ミリ秒。 */
+/** cpm is visual width per minute, so one unit of width is 60000/cpm ms. */
 export function dwellMs(card: Pick<Card, 'width' | 'isSentenceEnd' | 'isParagraphEnd'>, cpm: number): number {
-  // 文末は乗算でなく加算。文末カードは短いことが多く、乗算だと
-  // 欲しいのと逆に間が短くなる。
+  // The end-of-sentence pause is added, not multiplied. Final cards tend to be
+  // short, so multiplying would shorten the very pause it is meant to lengthen.
   const pause = card.isParagraphEnd ? 14 : card.isSentenceEnd ? 6 : 0
   return Math.max(180, (BASE + card.width + pause) * (60000 / cpm))
 }
 
-/** 戻ったカードを長めに出す。倍率だけでは体感できない
- *  (元が ~500ms なので 1.6倍でも +300ms にしかならない) ので、下限も効かせる。
- *  strength 0 で無効、1 で既定 (3倍 / 最低 1.8 秒)、2 で倍。 */
+/** Holds the card you stepped back to. A multiplier alone is not felt: from
+ *  ~500ms, even 1.6x only adds 300ms, so a floor applies too.
+ *  strength 0 disables it, 1 is the default (3x, at least 1.8s), 2 doubles it. */
 export function reviewDwellMs(base: number, strength = 1): number {
   if (strength <= 0) return base
   return Math.max(1800 * strength, base * (1 + 2 * strength))

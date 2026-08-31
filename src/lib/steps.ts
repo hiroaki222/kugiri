@@ -2,21 +2,23 @@ import type { Card } from './repair'
 import { dwellMs } from './dwell'
 import { visualWidth } from './width'
 
-/** 全文カードは Card ではない。Card は「本文の一区間」を表す型なので、
- *  複数文をまとめて再掲するものを混ぜると source offset の意味が壊れる。 */
+/** A summary is not a Card. Card means "one span of the body text", so mixing
+ *  in something that restates several sentences would break what its source
+ *  offsets mean. */
 export type PlaybackStep =
   | { kind: 'card'; cardIndex: number }
   | { kind: 'summary'; text: string; sentenceIds: number[]; afterCard: number; width: number }
 
 export type StepOptions = {
   showSummary: boolean
-  /** 全文カードの長さ。その文を流す予定 dwell の合計に対する割合。 */
+  /** Summary length, as a share of the planned dwell of the sentences it covers. */
   summaryRatio: number
   spanChars: number
 }
 
-/** 推定表示量の上限。これを超える全文カードは出さない (出しても読めない)。
- *  高さを実測せず決定的に決めるための代用。 */
+/** Upper bound on how much text a summary may hold. Standing in for measuring
+ *  its height, which would be another async layout pass; past this there is
+ *  nothing readable to show anyway. */
 const MAX_SUMMARY_WIDTH = 400
 
 export function buildSteps(
@@ -31,7 +33,8 @@ export function buildSteps(
     return steps
   }
 
-  // 短い文が続くとき 1文ごとに挟むと鬱陶しいので、累計がこの幅に達するまで溜める
+  // Short sentences in a row would interrupt on every one, so they accumulate
+  // until they are worth a card together.
   const groupThreshold = opts.spanChars * 2 * 3
   let ids: number[] = []
   let acc = 0
@@ -42,9 +45,9 @@ export function buildSteps(
     const last = sentences[ids[ids.length - 1]]
     const text = source.slice(first.start, last.end).trim()
     const width = visualWidth(text)
-    // 確定したグループが上限を超えていたらそのグループだけ出さない。
-    // accumulator は通常どおりリセットする — スキップしてもしなくても
-    // 同じ位置でリセットするので後続の境界は変わらない。
+    // An oversized group is dropped, but the accumulator resets either way:
+    // skipping and not skipping reset at the same place, so the boundaries
+    // that follow do not shift.
     if (width <= MAX_SUMMARY_WIDTH) {
       steps.push({ kind: 'summary', text, sentenceIds: [...ids], afterCard, width })
     }
@@ -66,8 +69,9 @@ export function buildSteps(
   return steps
 }
 
-/** 全文カードの滞留時間。実経過時間ではなく「予定 dwell の合計 × 割合」を使う —
- *  実測にすると一時停止・戻る操作・タブのバックグラウンド化で不合理に変わる。 */
+/** How long a summary is held. Derived from planned dwell rather than elapsed
+ *  time: measuring the real thing would make the summary's length swing with
+ *  pauses, steps backwards and a backgrounded tab. */
 export function summaryDwellMs(
   step: Extract<PlaybackStep, { kind: 'summary' }>,
   cards: Card[],
@@ -80,8 +84,8 @@ export function summaryDwellMs(
   return Math.min(12_000, Math.max(700, planned * ratio))
 }
 
-/** 進捗表示に使うオフセット。位置復元用の sourceAnchor とは別物 —
- *  sourceStart を使うと最終カードでも 100% にならない。 */
+/** The offset the progress bar reports, which is not the anchor used to
+ *  restore a position: sourceStart would never reach 100% on the last card. */
 export function progressOffset(
   step: PlaybackStep | undefined,
   cards: Card[],

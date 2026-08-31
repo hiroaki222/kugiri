@@ -2,8 +2,9 @@
 @import "@cloudflare/kumo/styles";
 @import "tailwindcss";
 
-/* 背景プリセットは単なる背景の差し替えではなく実質的な独自テーマなので、
-   canvas / base / line / 文字色 / brand 上の文字 / focus ring をセットで定義する。 */
+/* A background preset is a whole theme rather than one swapped colour, so each
+   defines canvas, base, line, text, the colour on brand, and the focus ring as
+   a set that has been checked for contrast together. */
 :root,
 [data-bg="light"] {
   --color-kumo-brand: #14479b;
@@ -24,21 +25,23 @@
   --kg-hair: #c7cec8;
 }
 
-/* 地の色から導く値。明い背景では「面を落とす」ことが浮き上がりを作るが、
-   暗い背景では逆に持ち上げないと差が出ないので、暗い配色側で上書きする。 */
+/* Values derived from the ground. On a light background, sinking a surface is
+   what makes it read as a surface; on a dark one only lifting it does, so the
+   dark presets override these. */
 :root {
-  /* 視線誘導の線。--kg-hair のような固定色だと「周辺を暗くする」で背景が沈んだとき
-     線と背景の明度が一致して消える。地の色に対する相対値で持つ。 */
+  /* The gaze line. A fixed colour like --kg-hair lands on the same lightness
+     as the ground once the surroundings are dimmed, and disappears; this stays
+     relative to the text colour instead. */
   --kg-guide: color-mix(in srgb, var(--kg-ink) 24%, transparent);
-  /* 全文カード・文脈画面が地の上に敷く面 */
+  /* The surface a summary or the context view lays over the ground. */
   --kg-overlay: color-mix(in srgb, var(--kg-paper) 96%, #000);
-  /* 「周辺を暗くする」の地 */
+  /* The ground when the surroundings are dimmed. */
   --kg-dim: color-mix(in srgb, var(--kg-paper) 86%, #000);
-  /* カードが載る面 */
+  /* The surface a card sits on. */
   --kg-card-bg: var(--kg-panel);
-  /* 文脈で現在のカードを示す塗り */
+  /* The fill marking the current card inside the context view. */
   --kg-mark-fill: color-mix(in srgb, var(--kg-mark) 22%, transparent);
-  /* 未再生のカードの沈め具合 */
+  /* How far an unstarted card sinks back. */
   --kg-idle-opacity: 0.32;
 }
 [data-bg="cream"] {
@@ -96,14 +99,15 @@
   --kg-idle-opacity: 0.5;
 }
 
-/* Noto Sans JP は unicode-range 分割の woff2 一式を同梱している (124 サブセット)。
-   @font-face は public/fonts/noto-sans-jp.css にあり index.html から読む
-   (CSS の @import はビルド時に解決されるので public を参照できない)。
-   実際に表示された範囲だけが取得されるので初回転送は本文次第。
-   「常用漢字だけのサブセット」にはしない — 任意の文章を貼る前提なので、
-   未収録漢字が必ず出て OS のフォントにフォールバックしてしまう。
-   目的は第三者フォント CDN に依存しないこと (同一オリジン配信) であって、
-   ネットワーク非依存でも全環境で同一寸法でもない。 */
+/* Noto Sans JP ships with the app as 124 unicode-range woff2 subsets. The
+   @font-face rules live in public/fonts/noto-sans-jp.css and are linked from
+   index.html, because an @import here would be resolved at build time and
+   could not reach public/. Only the ranges actually displayed are fetched, so
+   the first transfer depends on the text.
+   Subsetting to the common kanji is not an option: any text may be pasted, so
+   an unlisted character would appear and fall back to an OS font.
+   The point is serving the font from the same origin rather than a third-party
+   CDN — not working offline, and not identical metrics everywhere. */
 
 html,
 body,
@@ -117,8 +121,9 @@ body {
   font-family: "Noto Sans JP", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
-/* ロードに失敗したら Noto を含まない stack に切り替える。CSS に残したままだと
-   遅れて利用可能になった時点でブラウザが自動で切り替えて測定結果が古くなる。 */
+/* On a failed load the stack must not mention Noto at all: left in the CSS,
+   the browser would switch to it the moment it arrives and every measurement
+   already taken would be wrong. */
 [data-font="fallback"] body,
 [data-font="fallback"] .kg-type {
   font-family: system-ui, -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif;
@@ -128,26 +133,28 @@ body {
   font-feature-settings: "palt";
 }
 
-/* 日本語は文節で折り返す。既定だと「目安で / す。」のように語の途中で切れて読みにくい。
-   word-break: auto-phrase は BudouX と同じ発想の折り返しで、未対応環境では無視される。 */
+/* Japanese wraps at phrase boundaries. The default breaks mid-word, splitting
+   目安です into 目安で / す。 word-break: auto-phrase applies the same idea as
+   BudouX and is ignored where it is not supported. */
 .kg-jp-text {
   word-break: auto-phrase;
   line-break: strict;
   overflow-wrap: anywhere;
 }
 
-/* Kumo の Switch は grid-cols-[auto_1fr] でラベルが auto、スイッチが 1fr なので
-   スイッチがラベルのすぐ横に来る。設定 UI の慣習に合わせて右端固定にする。
-   Kumo 側の has-[...] と同じ詳細度で当てるため :has() を使う (!important は使わない)。 */
+/* Kumo's Switch lays out auto/1fr, which puts the control right beside its
+   label. Settings panels put it at the far edge instead. Matching Kumo's own
+   has-[...] specificity with :has() avoids reaching for !important. */
 .kg-switch-row > div:has([role="switch"]) {
   grid-template-columns: 1fr auto;
 }
-/* Kumo の Label は text-base 固定。設定パネルのラベル階層 (14px) に揃える。 */
+/* Kumo's Label is fixed at text-base; this brings it to the panel's own
+   label size. */
 .kg-switch-row label {
   font-size: 0.875rem;
 }
 
-/* カードは絶対に折り返さない */
+/* A card never wraps. */
 .kg-card {
   white-space: nowrap;
   display: inline-block;
@@ -164,13 +171,14 @@ body {
   }
 }
 
-/* Kumo の Tooltip は max-w-[var(--available-width)] なので、長い説明文が画面幅
-   いっぱいの一本の帯になって読めない。読める幅で折り返させる。
-   data-side を持つ popup (tooltip・popover) だけが対象で、Dialog には当たらない。 */
+/* Kumo's Tooltip is capped at the available width, so a long explanation
+   becomes one band across the screen. This wraps it at a readable measure.
+   Only popups carrying data-side match, which covers tooltips and popovers
+   and leaves dialogs alone. */
 [data-base-ui-portal] [role="presentation"][data-side] {
   max-width: min(23rem, var(--available-width));
-  /* body 直下に出るので、詳細設定のドロワー (z-30) より上に置かないと
-     ドロワー内から開いた popover がその裏に回ってクリックできない。 */
+  /* Portalled to the body, so without this a popover opened from inside the
+     settings drawer renders behind it and cannot be clicked. */
   z-index: 60;
 }
 [data-base-ui-portal] [role="presentation"][data-side] [data-base-ui-focusable] {
@@ -178,16 +186,17 @@ body {
   line-height: 1.7;
 }
 
-/* Kumo の Label は tooltip アイコンを inline のボタンで置くので、ベースラインに
-   揃って和文の字面の中心よりわずかに上に浮く。行の中心に合わせる。 */
+/* Kumo's Label puts the tooltip icon in an inline button, which sits on the
+   baseline and so floats slightly above the optical centre of Japanese text.
+   Centring it on the line fixes that. */
 .kg-tip label {
   display: inline-flex;
   align-items: center;
   gap: 0.3em;
 }
 
-/* 文脈画面。cqh を使うために自分をサイズコンテナにする
-   (現在の文を中央へ寄せるための上下の余白が、常に画面の半分になる)。 */
+/* The context view declares itself a size container so its padding can be half
+   its own height, which is what lets any sentence reach the middle. */
 .kg-context {
   container-type: size;
 }

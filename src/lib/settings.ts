@@ -25,8 +25,8 @@ export const DEFAULTS = {
 }
 export type Settings = typeof DEFAULTS
 
-/** .min()/.max() は範囲外を reject するだけでクランプはしない。
- *  1項目の破損で設定全体が飛ばないよう、項目ごとに .catch() で既定へ戻す。 */
+/** .min()/.max() reject an out-of-range value rather than clamping it, so each
+ *  field catches on its own: one corrupt entry must not discard the rest. */
 const clamped = (lo: number, hi: number, fallback: number) =>
   z.coerce.number().finite().min(lo).max(hi).catch(fallback)
 
@@ -47,12 +47,12 @@ const schema = z.object({
 const KEY = 'kugiri.settings'
 
 export function loadSettings(): Settings {
-  // localStorage は例外を投げうる (プライベートウィンドウ, サイトデータのブロック)
+  // localStorage can throw: private windows, blocked site data.
   try {
     const raw = localStorage.getItem(KEY)
     if (!raw) return { ...DEFAULTS }
     const parsed = schema.safeParse(JSON.parse(raw))
-    // v が未知なら全体を既定に戻す
+    // An unknown version means the whole shape is unfamiliar; start over.
     return parsed.success ? parsed.data : { ...DEFAULTS }
   } catch {
     return { ...DEFAULTS }
@@ -63,6 +63,6 @@ export function saveSettings(s: Settings): void {
   try {
     localStorage.setItem(KEY, JSON.stringify(s))
   } catch {
-    /* 保存できなくても動作は続ける */
+    /* Failing to persist is not worth interrupting the session for. */
   }
 }

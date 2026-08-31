@@ -19,28 +19,28 @@ const card = (o: Partial<Card> = {}): Card => ({
 })
 
 describe('dwell', () => {
-  it('cpm の定義どおり 60000/cpm で換算する', () => {
+  it('converts at 60000/cpm, as the unit says', () => {
     // (BASE 4 + width 14) * (60000/1200) = 18 * 50 = 900ms
     expect(dwellMs({ width: 14, isSentenceEnd: false, isParagraphEnd: false }, 1200)).toBe(900)
   })
-  it('文末・段落末は加算で伸ばす', () => {
+  it('sentence and paragraph endings add time rather than multiply it', () => {
     const base = dwellMs({ width: 6, isSentenceEnd: false, isParagraphEnd: false }, 1200)
     const sent = dwellMs({ width: 6, isSentenceEnd: true, isParagraphEnd: false }, 1200)
     const para = dwellMs({ width: 6, isSentenceEnd: true, isParagraphEnd: true }, 1200)
     expect(sent - base).toBe(300) // 6 width * 50ms
     expect(para).toBeGreaterThan(sent)
   })
-  it('短いカードにも下限がある', () => {
+  it('even a short card has a floor', () => {
     expect(dwellMs({ width: 1, isSentenceEnd: false, isParagraphEnd: false }, 4000)).toBe(180)
   })
-  it('戻ったカードは倍率だけでなく下限も効く', () => {
+  it('a card stepped back to gets both the multiplier and the floor', () => {
     expect(reviewDwellMs(400)).toBe(1800)
     expect(reviewDwellMs(1000)).toBe(3000)
   })
-  it('戻りの強さを設定で変えられる', () => {
-    expect(reviewDwellMs(1000, 0)).toBe(1000) // なし
-    expect(reviewDwellMs(1000, 2)).toBe(5000) // 倍
-    expect(reviewDwellMs(200, 0.5)).toBe(900) // 下限が効く
+  it('the strength of that pause is adjustable', () => {
+    expect(reviewDwellMs(1000, 0)).toBe(1000) // off
+    expect(reviewDwellMs(1000, 2)).toBe(5000) // doubled
+    expect(reviewDwellMs(200, 0.5)).toBe(900) // floor applies
   })
 })
 
@@ -57,7 +57,7 @@ describe('steps', () => {
     card({ sentenceId: 2, isSentenceEnd: true, isParagraphEnd: true, sourceStart: 9, sourceEnd: 15 }),
   ]
 
-  it('全文カードを出さない設定ではカードだけ', () => {
+  it('with summaries off, only cards', () => {
     const steps = buildSteps(source, cards, sentences, {
       showSummary: false,
       summaryRatio: 0.4,
@@ -67,18 +67,18 @@ describe('steps', () => {
     expect(steps.length).toBe(3)
   })
 
-  it('短い文が続くときはまとめて1枚にする', () => {
+  it('short sentences in a row share one summary', () => {
     const steps = buildSteps(source, cards, sentences, {
       showSummary: true,
       summaryRatio: 0.4,
       spanChars: 7,
     })
     const sums = steps.filter((s) => s.kind === 'summary')
-    expect(sums.length).toBe(1) // 3文で1枚
+    expect(sums.length).toBe(1) // three sentences, one summary
     expect(sums[0].kind === 'summary' && sums[0].sentenceIds.length).toBe(3)
   })
 
-  it('推定表示量が上限を超える文は出さない', () => {
+  it('a sentence past the size limit gets no summary', () => {
     const long = 'あ'.repeat(300)
     const steps = buildSteps(
       long,
@@ -89,7 +89,7 @@ describe('steps', () => {
     expect(steps.filter((s) => s.kind === 'summary').length).toBe(0)
   })
 
-  it('全文カードの長さは予定 dwell の割合', () => {
+  it('a summary lasts a share of the planned dwell', () => {
     const steps = buildSteps(source, cards, sentences, {
       showSummary: true,
       summaryRatio: 0.4,
@@ -101,14 +101,14 @@ describe('steps', () => {
     expect(ms).toBeLessThanOrEqual(12_000)
   })
 
-  it('進捗は sourceEnd を使う (最終カードで 100% になる)', () => {
+  it('progress uses sourceEnd, so the last card reaches 100%', () => {
     const last = { kind: 'card' as const, cardIndex: 2 }
     expect(progressOffset(last, cards, 15)).toBe(15)
   })
 })
 
 describe('settings', () => {
-  it('既定値が範囲内', () => {
+  it('the defaults are inside their own ranges', () => {
     expect(DEFAULTS.spanChars).toBe(7)
     expect(DEFAULTS.cpm).toBe(1200)
   })

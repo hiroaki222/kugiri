@@ -1,8 +1,9 @@
 /**
- * 再生の状態機械。
+ * The playback state machine.
  *
- * 単一の列挙型では表現できない — 「再生中に K を押す」「停止した瞬間に文脈を
- * 出す」はどれも元が再生中だったかを保持する必要がある。よって直交する軸に分ける。
+ * A single enum cannot express it: holding K while playing, or showing context
+ * the moment playback stops, both have to remember whether playback was running
+ * underneath. So the state is kept on axes that vary independently.
  */
 
 export type Display =
@@ -11,25 +12,31 @@ export type Display =
   | { mode: 'summary' }
 
 export type Playback = {
-  /** 再生意図。K を押しても scroll で止まっても変わらない。 */
+  /** What the reader asked for. Unchanged by holding K or by stopping on a
+   *  card that does not fit. */
   intent: 'playing' | 'paused'
   display: Display
-  /** 戻った直後の長い滞留の最中 */
+  /** In the longer hold that follows a step backwards. */
   reviewing: boolean
-  /** scroll カードに再生中に到達して自動停止した */
+  /** Playback reached a scrolling card and stopped there on its own. */
   scrollBlocked: boolean
-  /** 全文カードを読んでいる最中。focus と scroll は同時に立ちうるので分ける */
+  /** Reading a summary. Focus and scrolling can be true at once, so they are
+   *  tracked separately. */
   summaryFocused: boolean
   summaryScrolling: boolean
-  /** 現在位置。別 state に置くと二重送りや summary 遷移をイベント列で検証できない */
+  /** The current position. Kept here so double advances and summary
+   *  transitions can be tested as a sequence of events. */
   stepIndex: number
-  /** 位置復元用のアンカー。ユーザーが実際に移動したときだけ更新する。
-   *  毎回「現在カードの sourceStart」から取り直すと往復のたびに後退する。 */
+  /** The anchor a rebuild restores to, updated only when the reader actually
+   *  moves. Re-deriving it from the current card each time makes it drift
+   *  backwards a little on every round trip. */
   sourceAnchor: number
-  /** タイマーを張り替える全イベントで上がる。古い callback を捨てるため。 */
+  /** Bumped by every event that re-arms the timer, so stale callbacks are
+   *  discarded rather than firing. */
   timerGen: number
   timerDeadline: number | null
-  /** 長押し巻き戻しの最中。repeat のたびに reviewing を付けると引っかかる。 */
+  /** Rewinding under a held key. Marking each repeat as a review would make
+   *  the rewind stutter. */
   holding: boolean
 }
 
@@ -38,8 +45,8 @@ export type SeekCause = 'key-card' | 'key-sentence' | 'key-paragraph' | 'slider'
 export type Event =
   | { type: 'PLAY' }
   | { type: 'PAUSE_REQUEST' }
-  /** 設定を開いたときなど、ユーザーが「止めたい」と言ったわけではない停止。
-   *  PAUSE_REQUEST と違って文脈は出さない。 */
+  /** A stop the reader did not ask for, such as opening the settings. Unlike
+   *  PAUSE_REQUEST it shows no context. */
   | { type: 'SUSPEND' }
   | { type: 'TIMER'; gen: number }
   | { type: 'SEEK'; target: number; cause: SeekCause; direction: -1 | 1 }
@@ -55,12 +62,12 @@ export type Event =
   | { type: 'SUMMARY_SCROLL'; on: boolean }
   | { type: 'SCROLL_UNBLOCK' }
 
-/** step の種類。reducer は Card[] を知らないので、必要な情報だけ渡す。 */
+/** What the reducer needs to know about a step. It never sees the cards. */
 export type StepInfo = {
   kind: 'card' | 'summary'
-  /** 進捗と位置復元に使う source offset */
+  /** Source offset, for progress and for restoring a position. */
   sourceStart: number
-  /** scroll カードか (再生中に到達したら止める) */
+  /** A card that has to be scrolled; playback stops when it reaches one. */
   isScroll: boolean
 }
 
@@ -83,9 +90,9 @@ export const initial = (stepIndex = 0, sourceAnchor = 0): Playback => ({
 })
 
 /**
- * 止める理由を肯定的に列挙する。
- * 「card のときだけ進む」にすると全文カードで永久停止する —
- * 全文カード自身が予定 dwell を持って自動で次へ進む step だから。
+ * The reasons to hold still are listed positively. Advancing "only on a card"
+ * would stall forever on a summary, because a summary is itself a step with a
+ * dwell that carries on to the next one.
  */
 export function effectivePlaying(s: Playback): boolean {
   const paused =
@@ -107,19 +114,21 @@ function moveTo(s: Playback, deck: Deck, i: number, cause: SeekCause): Playback 
   const next = bump({
     ...s,
     stepIndex: clamped,
-    // 位置復元のアンカーはユーザーが移動したときだけ更新する
+    // The anchor only moves when the reader does.
     sourceAnchor: step ? step.sourceStart : s.sourceAnchor,
-    // 全文カードは K も自動文脈も出さない (何を反転するかが決まらないし、
-    // すでに全文が見えているので出す意味も無い)
+    // A summary shows no context, held or automatic: there is no single card
+    // to highlight, and the whole sentence is already on screen.
     display: step?.kind === 'summary' ? { mode: 'summary' } : { mode: 'card' },
-    // scroll カードで止まるのは再生中に到達したときだけ。手動で来たら止めない —
-    // でないと再生しようとして Space を押した人がカードを飛ばしてしまう。
+    // A scrolling card only blocks when playback arrives at it. Blocking on a
+    // manual arrival would make the next Space skip the card instead of
+    // starting playback.
     scrollBlocked: false,
     summaryFocused: false,
     summaryScrolling: false,
   })
-  // 戻る操作にだけ長い滞留を付ける。前進の seek に間は要らない。
-  // slider は自分で見に行った位置なので付けない。長押し中も付けない。
+  // Only a step backwards gets the longer hold. Moving forward needs no pause,
+  // the slider is a position the reader went to deliberately, and a held key is
+  // handled when it is released.
   const isBackKey = cause !== 'slider' && cause !== 'hold'
   return { ...next, reviewing: isBackKey && clamped < s.stepIndex }
 }
@@ -128,7 +137,7 @@ export function reduce(s: Playback, e: Event, deck: Deck): Playback {
   switch (e.type) {
     case 'PLAY': {
       if (s.scrollBlocked) {
-        // blocked 中は再生/停止のトグルではなく「解除して次へ進む」
+        // While blocked, Space releases and moves on rather than toggling.
         return moveTo({ ...s, scrollBlocked: false }, deck, s.stepIndex + 1, 'key-card')
       }
       if (s.intent === 'playing') return reduce(s, { type: 'PAUSE_REQUEST' }, deck)
@@ -143,8 +152,9 @@ export function reduce(s: Playback, e: Event, deck: Deck): Playback {
     }
 
     case 'PAUSE_REQUEST': {
-      // 文脈を自動で出すのはこのイベントのときだけ。intent === 'paused' を条件に
-      // すると読書画面に入った直後 (初期状態も paused) から文脈表示になる。
+      // The only event that shows context on its own. Keying it off a paused
+      // intent instead would show context the instant the reading view opens,
+      // since it starts paused.
       const cur = at(deck, s.stepIndex)
       return {
         ...bump(s),
@@ -164,7 +174,7 @@ export function reduce(s: Playback, e: Event, deck: Deck): Playback {
       if (s.stepIndex >= deck.steps.length - 1) return reduce(s, { type: 'REACHED_END' }, deck)
       const next = s.stepIndex + 1
       const step = at(deck, next)
-      // 再生中に scroll カードへ到達したら止める
+      // Reaching a scrolling card while playing stops there.
       if (step?.isScroll) {
         return {
           ...bump(s),
@@ -191,24 +201,25 @@ export function reduce(s: Playback, e: Event, deck: Deck): Playback {
       return { ...bump(s), holding: true, reviewing: false }
 
     case 'HOLD_END':
-      // 長押しを離した時点の位置にだけ reviewing を付ける
+      // Only where the held key was released counts as a review.
       return { ...bump(s), holding: false, reviewing: true }
 
     case 'CONTEXT_DOWN': {
-      // 全文カード表示中は文脈に遷移しない
+      // No context while a summary is up.
       if (s.display.mode === 'summary') return s
       return { ...bump(s), display: { mode: 'context', by: 'held' } }
     }
 
     case 'CONTEXT_UP': {
-      // 停止して出ている文脈は K を離しても消さない
+      // Context that came from stopping outlives the key being released.
       if (s.display.mode !== 'context' || s.display.by !== 'held') return s
       return { ...bump(s), display: { mode: 'card' } }
     }
 
     case 'BLUR': {
-      // 押しているキーの状態をリセットすることと、表示を変えることを分ける。
-      // K を押したままフォーカスを失うと keyup が来ないので BLUR は必須。
+      // Clearing the held-key state and changing what is displayed are separate
+      // things. Losing focus with K down never delivers a keyup, so this event
+      // has to exist.
       const held = s.display.mode === 'context' && s.display.by === 'held'
       return {
         ...bump(s),

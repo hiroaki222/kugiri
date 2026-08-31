@@ -18,11 +18,13 @@ export type DraftCard = {
 }
 
 export type ProposalMetrics = {
-  /** 文ごとに ja/en を選ぶので単一値では持てない (日英混在文書で破綻する) */
+  /** Chosen per sentence, so it cannot be a single number: a document mixing
+   *  Japanese and English needs both. */
   idealPxFor: (sentenceText: string) => number
   hardMaxPx: number
   approxSpan: (start: number, end: number) => number
-  /** 知覚スパンの px 換算に使う。span の外の文字列を測る唯一の経路 */
+  /** Converts the perceptual span to pixels. The only way to measure a string
+   *  that is not a span of the source. */
   approxText: (text: string) => number
   spanChars: number
 }
@@ -33,7 +35,7 @@ export type Proposal = {
   drafts: DraftCard[]
   sentences: (Span & { id: number; paragraphId: number })[]
   paragraphs: (Span & { id: number })[]
-  /** 測定回数。ベンチマーク用 */
+  /** Measurement count, for benchmarks. */
   measureCalls: number
 }
 
@@ -41,9 +43,9 @@ export function prepareSource(raw: string, opts?: NormalizeOptions): string {
   return normalize(raw, opts)
 }
 
-/** 同期・DOM layout 非依存。「純粋」とは呼ばない —
- *  approxWidth は canvas とフォント状態に依存するクロージャなので、
- *  同じ引数でも状態次第で結果が変わりうる。 */
+/** Synchronous and free of DOM layout, but not pure: approxSpan closes over a
+ *  canvas and the font state, so the same arguments can give different answers
+ *  depending on what has loaded. */
 export function proposeCards(
   source: string,
   m: ProposalMetrics,
@@ -101,7 +103,9 @@ export function proposeCards(
   return { source, tokens, drafts, sentences, paragraphs, measureCalls: calls }
 }
 
-/** 知覚スパン: 日本語 全角7字 / 英語 半角12字 (同定できる範囲 3–4 + 7–8) */
+/** The perceptual span in pixels: 7 full-width characters for Japanese, 12
+ *  half-width for English — the part of the span a reader can actually
+ *  identify as words, 3-4 to the left and 7-8 to the right. */
 export function makeIdealPxFor(
   approxText: (t: string) => number,
   spanChars: number,

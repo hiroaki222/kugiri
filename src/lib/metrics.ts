@@ -7,29 +7,32 @@ const NOTO_STACK = '"Noto Sans JP", system-ui, sans-serif'
 const FALLBACK_STACK = 'system-ui, -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif'
 
 export type MetricsOpts = {
-  /** ★必須。unicode-range のサブセットは本文を渡さないとロードされない。
-   *  代表文字だけロードして測定は同期、は成立しない — 測定用 span に本文を入れた
-   *  瞬間に別レンジが非同期ロードされ始め、同期の測定はそれを待てない。 */
+  /** Required. The unicode-range subsets only load for characters actually
+   *  asked for, so the body text has to be passed. Loading a few sample
+   *  characters and measuring synchronously does not work: putting the real
+   *  text into the ruler starts loading further ranges, and a synchronous
+   *  measurement cannot wait for them. */
   source: string
   container: HTMLElement
   sizePx: number
   letterSpacing: number
   spanChars: number
   signal?: AbortSignal
-  /** テスト用。既定は 3000ms */
+  /** For tests. Defaults to 3000ms. */
   timeoutMs?: number
 }
 
 export type LayoutMetrics = ProposalMetrics & {
   fontMode: FontMode
   fontFamily: string
-  /** 確定したカードだけを測る。512件バッチ。 */
+  /** Measures settled cards, in batches of 512. */
   exactWidth: (texts: string[]) => number[]
   dispose: () => void
 }
 
-/** 書体を確定してから metrics を返す。Noto が来なければ fallback stack に固定する。
- *  返る fontMode が「その deck を測った書体」を表す。 */
+/** Settles on a typeface before returning any metrics, pinning the fallback
+ *  stack if Noto does not arrive. The fontMode it returns is the face the deck
+ *  was measured in, and the deck must be displayed in that same face. */
 export async function resolveMetrics(opts: MetricsOpts): Promise<LayoutMetrics> {
   const { source, container, sizePx, letterSpacing, spanChars } = opts
   const spec = `400 ${sizePx}px "Noto Sans JP"`
@@ -39,20 +42,22 @@ export async function resolveMetrics(opts: MetricsOpts): Promise<LayoutMetrics> 
     const load = document.fonts.load(spec, source)
     const timeout = new Promise<null>((r) => setTimeout(() => r(null), opts.timeoutMs ?? 3000))
     const won = await Promise.race([load.then(() => 'ok' as const), timeout])
-    // load と check の両方に本文を渡す。代表文字だけでは本文に必要な
-    // サブセットの確認にならない。
+    // Both load and check take the body text. Sample characters would only
+    // confirm the subsets they happen to fall in.
     if (won === 'ok' && document.fonts.check(spec, source)) mode = 'noto'
   } catch {
     mode = 'fallback'
   }
   if (opts.signal?.aborted) throw new DOMException('aborted', 'AbortError')
 
-  // 失敗したら Noto を含まない stack を当てる。CSS に残したままだと遅れて
-  // 利用可能になった時点でブラウザが自動で切り替えて測定結果が古くなる。
+  // On failure the stack must not mention Noto at all. Leaving it in the CSS
+  // lets the browser switch the moment it becomes available, which silently
+  // invalidates every measurement already taken.
   const fontFamily = mode === 'noto' ? NOTO_STACK : FALLBACK_STACK
 
-  // 測定要素は実カードとタイポグラフィを揃えつつ、自然幅が測れるよう
-  // max-width / flex の制約と padding / border を明示的に外す。
+  // The ruler shares its typography with the real cards but drops the
+  // max-width, the flex sizing, the padding and the border, so what it reports
+  // is the natural width of the text.
   const ruler = document.createElement('div')
   ruler.setAttribute('aria-hidden', 'true')
   ruler.style.cssText =
@@ -70,9 +75,9 @@ export async function resolveMetrics(opts: MetricsOpts): Promise<LayoutMetrics> 
   const ctx = canvas.getContext('2d')!
   ctx.font = `400 ${sizePx}px ${fontFamily}`
 
-  // letter-spacing の補正には候補ごとの書記素数が要る。候補のたびに
-  // Intl.Segmenter を回すと DP の支配的コストになる (実測で6倍)。
-  // source を1回走査して O(1) で引く。
+  // Correcting for letter-spacing needs a grapheme count per candidate, and
+  // running Intl.Segmenter per candidate dominates the packing — six times
+  // slower when measured. One pass over the source makes it O(1).
   const gcount = buildGraphemeIndex(source)
   const lsPx = letterSpacing * sizePx
 
@@ -82,8 +87,8 @@ export async function resolveMetrics(opts: MetricsOpts): Promise<LayoutMetrics> 
     ctx.measureText(t).width + lsPx * Math.max(0, visualWidth(t) / 2 - 1)
 
   const exactWidth = (texts: string[]): number[] => {
-    // 書き込み → 1回レイアウト → 一括読み取り。交互にやるとカードごとに
-    // 強制レイアウトが走る。
+    // Write everything, lay out once, then read everything. Interleaving the
+    // two forces a layout per card.
     const spans = texts.map((t) => {
       const el = document.createElement('span')
       el.style.cssText = `${typography}display:inline-block;width:max-content;max-width:none;padding:0;border:0;`
@@ -99,8 +104,9 @@ export async function resolveMetrics(opts: MetricsOpts): Promise<LayoutMetrics> 
   const ja = approxText('あ'.repeat(spanChars))
   const en = approxText('n'.repeat(Math.round((spanChars / 7) * 12)))
 
-  // hardMaxPx はカード内側の content width。padding とマーカー余白は
-  // コンテナ寸法を出すときに一度だけ引く (測定値にも入れると二重控除)。
+  // hardMaxPx is the content width inside a card. Padding and the room the
+  // gaze marks need come off once here; taking them off the measurements too
+  // would subtract them twice.
   const style = getComputedStyle(container)
   const pad = Number.parseFloat(style.paddingLeft) + Number.parseFloat(style.paddingRight)
   const hardMaxPx = Math.max(0, container.clientWidth - pad - sizePx * 1.2)
@@ -109,7 +115,8 @@ export async function resolveMetrics(opts: MetricsOpts): Promise<LayoutMetrics> 
     fontMode: mode,
     fontFamily,
     idealPxFor: (text: string) => {
-      // 「1文字でも CJK なら日本語」は粗すぎる (英文に固有名詞が1つ入っただけで切り替わる)
+      // "Any CJK character means Japanese" is too coarse: one proper noun in an
+      // English sentence would flip it.
       const total = visualWidth(text)
       if (total === 0) return ja
       let cjk = 0

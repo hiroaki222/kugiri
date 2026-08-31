@@ -13,9 +13,11 @@ type Props = {
   sizePx: number
   letterSpacing: number
   dim: boolean
-  /** まだ一度も再生していない状態。カードを沈めて始め方を出す。 */
+  /** Nothing has been played yet: the card sinks back and the screen says how
+   *  to start. */
   idle: boolean
-  /** 文脈に出す前後の文の数。論文だと数段落さかのぼらないと話が繋がらない。 */
+  /** How many sentences of context to show either side. A paper often needs
+   *  several paragraphs back before the argument reconnects. */
   contextSentences: number
   summaryProgress: number | null
   onSummaryFocus: (on: boolean) => void
@@ -23,8 +25,9 @@ type Props = {
   stageRef: React.RefObject<HTMLDivElement | null>
 }
 
-/** 前後の文は手がかりなので、長すぎるものは端を落とす。落とすのは現在の文から
- *  遠いほう (前の文は末尾、後ろの文は冒頭が効く)。現在の文だけは切らない。 */
+/** Neighbouring sentences are a cue, so an overlong one is trimmed from the end
+ *  further from where you are: the tail of what came before leads in, the head
+ *  of what follows leads out. The current sentence is never trimmed. */
 const NEIGHBOUR_MAX = 400
 
 type ContextBlock =
@@ -67,7 +70,7 @@ function contextBlocks(
   return { blocks, head: lo > 0, tail: hi < sentences.length - 1 }
 }
 
-/** 前後にまだ本文が続いていることの印 */
+/** Marks that the text carries on beyond what is shown. */
 const Ellipsis = () => (
   <span aria-hidden className="text-center" style={{ color: 'var(--kg-muted)' }}>
     …
@@ -111,24 +114,26 @@ export function CardStage(props: Props) {
       />
 
       {step?.kind !== 'summary' && display.mode !== 'context' && (
-        // 初版は中央揃え。左寄せアンカーは入れない — 「文字列の特定位置をマーカーに
-        // 合わせる」なら総幅の検査では足りず、左右それぞれが収まることを見る必要がある
-        // (anchorOffsetPx <= markerX かつ measuredPx - anchorOffsetPx <= 幅 - markerX)。
-        // 実際に試すと、総幅は収まっているのに右側がステージ外に出るカードが 34 件出た。
+        // Centred. Aligning a fixed position within the text to a fixed
+        // position on screen would need both sides checked separately rather
+        // than the total width, and trying it produced 34 cards whose total
+        // width fitted while their right-hand side ran off the stage.
         <div
           className="relative w-full text-center"
           style={
-            // 未開始のカードは沈めて、目を「始め方」の案内に向ける。
-            // 彩度を落とす加工はしない。暗い配色ではカードの面だけが灰色の矩形に
-            // なって地から浮き、かえって目障りになる。沈めるのは不透明度だけ。
+            // An unstarted card sinks back so the eye goes to the instructions.
+            // Desaturating is not part of it: on a dark background that turns
+            // the card's surface into a grey rectangle floating on the ground,
+            // which draws more attention rather than less.
             idle ? { opacity: 'var(--kg-idle-opacity)', transition: 'opacity .25s' } : undefined
           }
         >
           <span aria-hidden className="absolute left-1/2 h-4 w-px" style={{ top: -30, background: 'var(--kg-mark)' }} />
           <span aria-hidden className="absolute left-1/2 h-4 w-px" style={{ bottom: -30, background: 'var(--kg-mark)' }} />
           {card?.fit.mode === 'scroll' ? (
-            // 縮小はしない (文字サイズ設定を裏切るため)。収まらないものは
-            // 専用の横スクロール領域にする。キーボードからは Shift+←/→ で辿れる。
+            // Never scaled down, which would ignore the size that was chosen.
+            // What does not fit gets its own scrolling region, reachable from
+            // the keyboard with Shift and an arrow.
             <div
               ref={scrollRef}
               tabIndex={0}
@@ -159,8 +164,9 @@ export function CardStage(props: Props) {
       {idle && display.mode === 'card' && step?.kind !== 'summary' && (
         <div
           className="pointer-events-none absolute inset-x-0 grid justify-items-center gap-1.5 px-6 text-center"
-          // カードの直下に置く。文字サイズでカードの高さが変わるので、
-          // 中央からの距離もそれに追随させる (視点マーカーの下端が 50% + 46px)。
+          // Sits just under the card. The card's height follows the text size,
+          // so the offset from the centre follows it too; the lower gaze mark
+          // ends at 50% + 46px.
           style={{ top: `calc(50% + ${Math.round(sizePx * 1.2) + 76}px)` }}
         >
           <p className="m-0 text-sm font-medium">

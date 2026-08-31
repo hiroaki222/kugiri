@@ -13,18 +13,18 @@ const SKIP_AFTER = new Set([' ', '\t'])
 
 type Frame = { close: string; pending: number | null }
 
-/** 半角ピリオドの終端判定。約物を読み飛ばしてから次の文字を見る。
- *  `He said "Hi." Then` を扱うために必要。 */
+/** Whether an ASCII period ends a sentence. Closing punctuation is skipped
+ *  before looking at what follows, which is what `He said "Hi." Then` needs. */
 function periodEndsSentence(g: string[], i: number): boolean {
   let k = i + 1
   while (k < g.length && CLOSE_SET.has(g[k])) k++
-  // 直後が空白か文末
+  // Whitespace or end of text has to follow.
   if (k < g.length && !SKIP_AFTER.has(g[k])) return false
   while (k < g.length && SKIP_AFTER.has(g[k])) k++
   const next = g[k]
-  // その次の非空白が 大文字 / CJK / 文末
+  // The next non-space has to be a capital, a CJK character, or nothing.
   if (next !== undefined && !/[A-Z]/.test(next) && !/[぀-ヿ㐀-鿿]/.test(next)) return false
-  // 「単独の大文字」の直後ではない: U.S. / J. R. R. を守る
+  // Not preceded by a lone capital, which keeps U.S. and J. R. R. intact.
   const prev = g[i - 1]
   const prev2 = g[i - 2]
   if (prev !== undefined && /^[A-Z]$/.test(prev) && (prev2 === undefined || !/[A-Za-z]/.test(prev2)))
@@ -33,15 +33,16 @@ function periodEndsSentence(g: string[], i: number): boolean {
 }
 
 /**
- * 括弧の深さを見る手書きスキャナ。
+ * A hand-written scanner that tracks bracket depth.
  *
- * 素朴な「depth === 0 のときだけ終端判定」では要求を満たせない —
- * 「はい。」「いいえ。」も He said "Hi." も終端記号が括弧の内側にあるので
- * 候補にすらならない。一方 彼は「そうだ。」と言った。 では切ってはいけない。
- * よって内側の終端は「保留候補」としてフレームに覚え、閉じ括弧まで読んでから
- * 「次に何が来るか」で確定/破棄を決める。
+ * Only terminating at depth zero is not enough: in 「はい。」「いいえ。」 and in
+ * He said "Hi." the terminator sits inside the quotes, so it never even becomes
+ * a candidate — yet 彼は「そうだ。」と言った。 must not be split at the same
+ * kind of position. So an inner terminator is remembered on its frame as a
+ * pending candidate, and what follows the closing bracket decides whether it
+ * becomes a break or is discarded.
  *
- * @param protectedSpans この内側には境界を置かない (URL・メール)
+ * @param protectedSpans no boundary may fall inside these (URLs, addresses)
  */
 export function splitSentences(
   source: string,
@@ -50,7 +51,7 @@ export function splitSentences(
 ): Span[] {
   const text = source.slice(span.start, span.end)
   const g = graphemes(text)
-  // 書記素 index -> source offset
+  // Grapheme index to source offset.
   const off: number[] = []
   let acc = span.start
   for (const c of g) {
@@ -85,11 +86,12 @@ export function splitSentences(
     if (stack.length && c === stack[stack.length - 1].close) {
       const frame = stack.pop()!
       if (frame.pending !== null && stack.length === 0) {
-        // 閉じ括弧の後、空白と連続する閉じ括弧を読み飛ばして次を見る
+        // Look past the closing bracket, any spaces and any further closers.
         let k = i + 1
         while (k < g.length && (SKIP_AFTER.has(g[k]) || CLOSE_SET.has(g[k]))) k++
         const next = g[k]
-        // 別の開き括弧 or 段落の終端 → 確定。本文が続く → 破棄。
+        // Another opening bracket, or the end: a real break. Body text
+        // continuing means the quote was embedded, so the candidate is dropped.
         if (next === undefined || PAIR[next]) cut(k < g.length ? k : g.length)
       }
       continue
@@ -103,11 +105,11 @@ export function splitSentences(
     if (!isTerm) continue
 
     if (stack.length || quote) {
-      // 内側の終端は保留にする
+      // An inner terminator only becomes a candidate.
       if (stack.length) stack[stack.length - 1].pending = i
       continue
     }
-    // 連続する終端記号 (！？ ……) と後続の閉じ括弧を飲んでから切る
+    // Swallow runs of terminators (！？, ……) and any closers before cutting.
     let k = i
     while (k + 1 < g.length && (TERM.has(g[k + 1]) || g[k + 1] === '.')) k++
     while (k + 1 < g.length && CLOSE_SET.has(g[k + 1])) k++

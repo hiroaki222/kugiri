@@ -30,7 +30,7 @@ const run = (raw: string, hardMaxPx: number, spanChars = 7) => {
 const JA = '視覚的な情報処理において、人間の眼球は連続的に文字列を追っているわけではない。実際にはサッケードと呼ばれる跳躍運動を繰り返している。'
 
 describe('repair', () => {
-  it('通常カードは必ず hardMaxPx に収まる', async () => {
+  it('every ordinary card fits within hardMaxPx', async () => {
     const { cards } = await run(JA, 300)
     for (const c of cards) {
       if (c.fit.mode === 'normal') expect(c.measuredPx).toBeLessThanOrEqual(300)
@@ -38,7 +38,7 @@ describe('repair', () => {
     expect(cards.length).toBeGreaterThan(0)
   })
 
-  it('狭くすると分割が増え、それでも全部収まる', async () => {
+  it('a narrower stage splits more and still fits everything', async () => {
     const wide = await run(JA, 400)
     const narrow = await run(JA, 120)
     expect(narrow.cards.length).toBeGreaterThan(wide.cards.length)
@@ -47,14 +47,14 @@ describe('repair', () => {
     }
   })
 
-  it('単一トークンが超過したら scroll に落ちる', async () => {
-    // 幅40 の1トークンを hardMax 30 に入れる
+  it('a single token wider than the stage falls back to scrolling', async () => {
+    // one token of width 40 against a hardMax of 30
     const { cards } = await run('ブラックボックス', 30)
     const scrolls = cards.filter((c) => c.fit.mode === 'scroll')
     expect(scrolls.length).toBeGreaterThan(0)
   })
 
-  it('URL は atomic として scroll になる', async () => {
+  it('a URL scrolls, marked atomic', async () => {
     const source = prepareSource('参照 https://example.com/very/long/path/that/never/ends です。')
     const url = source.indexOf('https://')
     const spans = [{ start: url, end: source.indexOf(' ', url) }]
@@ -78,15 +78,15 @@ describe('repair', () => {
     expect(atomic?.text).toContain('https://')
   })
 
-  it('終端フラグは最後の分割片だけが持つ', async () => {
+  it('only the last piece keeps the end flags', async () => {
     const { cards } = await run(JA, 100)
-    // 文末フラグの数 = 文の数
+    // one end-of-sentence flag per sentence
     const p = propose(JA, 7, 100)
     expect(cards.filter((c) => c.isSentenceEnd).length).toBe(p.sentences.length)
     expect(cards.filter((c) => c.isParagraphEnd).length).toBe(p.paragraphs.length)
   })
 
-  it('完全被覆が repair の後も保たれる', async () => {
+  it('full coverage survives repair', async () => {
     const { p, cards } = await run(JA, 100)
     let cur = 0
     for (const c of cards) {
@@ -97,7 +97,7 @@ describe('repair', () => {
     expect(p.source.slice(cur).trim()).toBe('')
   })
 
-  it('世代が変わったら null を返して打ち切る', async () => {
+  it('returns null and abandons the work when the generation moves on', async () => {
     const p = propose(JA, 7, 100)
     const cards = await repair(p, {
       hardMaxPx: 100,
@@ -107,7 +107,7 @@ describe('repair', () => {
     expect(cards).toBeNull()
   })
 
-  it('バッチ境界で譲る', async () => {
+  it('yields at a batch boundary', async () => {
     let yields = 0
     const p = propose(JA, 7, 300)
     await repair(p, {
@@ -122,7 +122,7 @@ describe('repair', () => {
     expect(yields).toBeGreaterThan(0)
   })
 
-  it('段落のカード範囲を後から再計算する', async () => {
+  it('paragraph card ranges are recomputed afterwards', async () => {
     const { p, cards } = await run('一つ目の段落です。\n\n二つ目の段落です。', 300)
     const ranges = paragraphRanges(cards, p.paragraphs.length)
     expect(ranges.length).toBe(2)

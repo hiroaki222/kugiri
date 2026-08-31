@@ -1,5 +1,6 @@
-/** 書記素クラスタ単位で走査する。コードポイント単位だと結合文字・ZWJ 絵文字・
- *  サロゲートペアを割ってしまう。Intl.Segmenter 未対応環境は対象外とする。 */
+/** Everything is scanned by grapheme cluster. Walking code points splits
+ *  combining marks, ZWJ emoji and surrogate pairs. Environments without
+ *  Intl.Segmenter are out of scope rather than served by a broken fallback. */
 const segmenter = new Intl.Segmenter('ja', { granularity: 'grapheme' })
 
 export function graphemes(text: string): string[] {
@@ -18,8 +19,9 @@ const WIDE =
   /[　-〿぀-ヿ㐀-䶿一-鿿豈-﫿＀-｠￠-￦]/
 const EMOJI = /\p{Extended_Pictographic}/u
 
-/** 全角=2 / 半角=1。滞留時間の計算にだけ使う。詰める判断には使わない
- *  (プロポーショナル書体では同じ visual width でも実幅が倍近くずれる)。 */
+/** Full width counts 2, half width 1. Used only to time a card, never to
+ *  decide what fits: in a proportional face two strings of equal visual width
+ *  can differ in real width by almost double. */
 export function visualWidth(text: string): number {
   let w = 0
   for (const g of segmenter.segment(text)) {
@@ -35,8 +37,8 @@ export function hasCJK(text: string): boolean {
   return CJK.test(text)
 }
 
-/** 文が主に日本語か。1文字でも CJK なら日本語、は粗すぎる
- *  (長い英文に固有名詞が1つ入っただけで切り替わってしまう)。 */
+/** How Japanese a sentence is. "Any CJK character means Japanese" is too
+ *  coarse: one proper noun would flip a long English sentence. */
 export function cjkRatio(text: string): number {
   const total = visualWidth(text)
   if (total === 0) return 0
@@ -48,10 +50,10 @@ export function cjkRatio(text: string): number {
 }
 
 /**
- * source 全体の書記素数の累積索引。
- * letter-spacing の補正には候補ごとの書記素数が要るが、候補のたびに
- * Intl.Segmenter を回すと DP の支配的コストになる (実測で 6倍遅くなった)。
- * 1回だけ走査して O(1) で引けるようにする。
+ * Prefix index of grapheme counts over the whole source.
+ * Correcting for letter-spacing needs the grapheme count of every candidate,
+ * and running Intl.Segmenter per candidate dominates the packing cost — six
+ * times slower when measured. One pass here makes each lookup O(1).
  */
 export function buildGraphemeIndex(source: string): (start: number, end: number) => number {
   const cum = new Uint32Array(source.length + 1)

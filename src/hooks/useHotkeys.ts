@@ -16,7 +16,8 @@ export type HotkeyHandlers = {
   settings: () => void
 }
 
-/** タグの列挙だけでは漏れる。Kumo/Base UI が生成する role も除外する。 */
+/** Listing tags misses things, so the roles Kumo and Base UI generate are
+ *  excluded too. */
 const INTERACTIVE =
   'input, textarea, select, button, [contenteditable], [role="slider"], [role="listbox"], [role="menu"], [role="dialog"], [data-hotkeys-off]'
 
@@ -31,16 +32,16 @@ export function useHotkeys(enabled: boolean, h: HotkeyHandlers) {
     let holding = false
 
     const onKeyDown = (e: KeyboardEvent) => {
-      // IME 変換中は無視。修飾キー併用は素通し。
+      // Ignore keys during IME composition; let modified keys through.
       if (e.isComposing || e.metaKey || e.ctrlKey || e.altKey) return
       const t = e.target as Element | null
       const k = e.key
       const blocked = t?.closest?.(INTERACTIVE)
       if (blocked) {
-        // data-hotkeys-off は「矢印キーなどを本来の用途に渡す」ためのもので、
-        // 再生の切り替えまで殺す必要はない。文脈オーバーレイや長いカードを
-        // クリックしたあと Space が効かなくなるのを防ぐ。
-        // 文字を入力する要素では Space は本来の意味を持つので除外する。
+        // data-hotkeys-off exists to hand the arrow keys to whatever owns them,
+        // which is no reason to take play/pause away as well: clicking the
+        // context overlay or a long card would leave Space dead. Elements you
+        // type into are the exception, where Space means a space.
         const typing = blocked.matches('input, textarea, select, [contenteditable]')
         if (!typing && (k === ' ' || e.code === 'Space')) {
           e.preventDefault()
@@ -50,7 +51,7 @@ export function useHotkeys(enabled: boolean, h: HotkeyHandlers) {
       }
       const H = ref.current
 
-      // K は Shift+k なので、小文字の処理より先に判定する
+      // K is Shift+k, so it has to be matched before the lower-case handler.
       if (k === 'K' && e.shiftKey) {
         e.preventDefault()
         H.contextDown()
@@ -83,7 +84,8 @@ export function useHotkeys(enabled: boolean, h: HotkeyHandlers) {
         gPending = false
       }
 
-      // scroll カードの横スクロールは Shift+←/→。← → 単体は常にカード移動。
+      // Shift with an arrow scrolls a card that does not fit. The arrows alone
+      // always move between cards, whatever holds focus.
       if (e.shiftKey && (k === 'ArrowLeft' || k === 'ArrowRight')) return
 
       switch (k) {
@@ -151,7 +153,7 @@ export function useHotkeys(enabled: boolean, h: HotkeyHandlers) {
         H.holdEnd()
       }
     }
-    // K を押したままフォーカスを失うと keyup が来ない
+    // Losing focus while K is held never delivers its keyup.
     const onBlur = () => {
       holding = false
       ref.current.contextUp()
