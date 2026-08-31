@@ -134,12 +134,18 @@ export function CardStage(props: Props) {
       )}
 
       {idle && display.mode === 'card' && step?.kind !== 'summary' && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-[14%] grid justify-items-center gap-1.5 px-6 text-center">
+        <div
+          className="pointer-events-none absolute inset-x-0 grid justify-items-center gap-1.5 px-6 text-center"
+          // カードの直下に置く。文字サイズでカードの高さが変わるので、
+          // 中央からの距離もそれに追随させる (視点マーカーの下端が 50% + 46px)。
+          style={{ top: `calc(50% + ${Math.round(sizePx * 1.2) + 76}px)` }}
+        >
           <p className="m-0 text-sm font-medium">
+            {'右下の再生ボタンか '}
             <kbd className="rounded-sm border px-1.5 py-0.5 text-xs" style={{ borderColor: 'var(--kg-hair)' }}>
               Space
             </kbd>
-            {' か下の再生ボタンで始めます'}
+            {' で始まります'}
           </p>
           <p className="m-0 text-xs" style={{ color: 'var(--kg-muted)' }}>
             自分のペースで送るなら ← → 、止めると前後の文が出ます
