@@ -99,7 +99,7 @@ export default function App() {
       s.kind === 'summary'
         ? summaryDwellMs(s, ready.cards, settings.cpm, settings.summaryRatio)
         : dwellMs(ready.cards[s.cardIndex], settings.cpm)
-    const ms = pb.reviewing ? reviewDwellMs(base) : base
+    const ms = pb.reviewing ? reviewDwellMs(base, settings.reviewStrength) : base
     const gen = pb.timerGen
     const t = setTimeout(() => dispatch({ type: 'TIMER', gen }), ms)
 
@@ -118,7 +118,14 @@ export default function App() {
     }
     setSummaryProgress(null)
     return () => clearTimeout(t)
-  }, [ready, pb.timerGen, pb.stepIndex, pb.reviewing, settings.cpm, settings.summaryRatio, dispatch])
+  }, [ready, pb.timerGen, pb.stepIndex, pb.reviewing, settings.cpm, settings.summaryRatio,
+      settings.reviewStrength, dispatch])
+
+  // 詳細設定を開いたら再生を止める。ユーザーが「止めたい」と言ったわけではないので
+  // 文脈は出さない (停止ボタンとは意味が違う)。
+  useEffect(() => {
+    if (panel) dispatch({ type: 'SUSPEND' })
+  }, [panel, dispatch])
 
   const seekStep = useCallback(
     (target: number, cause: Parameters<typeof reduce>[1] extends never ? never : 'key-card' | 'key-sentence' | 'key-paragraph' | 'slider' | 'hold') => {

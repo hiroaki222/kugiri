@@ -37,6 +37,11 @@ describe('dwell', () => {
     expect(reviewDwellMs(400)).toBe(1800)
     expect(reviewDwellMs(1000)).toBe(3000)
   })
+  it('戻りの強さを設定で変えられる', () => {
+    expect(reviewDwellMs(1000, 0)).toBe(1000) // なし
+    expect(reviewDwellMs(1000, 2)).toBe(5000) // 倍
+    expect(reviewDwellMs(200, 0.5)).toBe(900) // 下限が効く
+  })
 })
 
 describe('steps', () => {

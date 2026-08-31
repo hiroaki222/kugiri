@@ -184,6 +184,23 @@ export function SettingsDrawer({ open, settings, onChange, onClose }: Props) {
             />
           </Group>
 
+          <Group title="読み返し">
+            <Slider
+              label="戻ったときの間"
+              value={settings.reviewStrength}
+              display={
+                settings.reviewStrength === 0
+                  ? 'なし'
+                  : `${(1 + 2 * settings.reviewStrength).toFixed(1)} 倍`
+              }
+              min={0}
+              max={2}
+              step={0.25}
+              onChange={(reviewStrength) => onChange({ reviewStrength })}
+              note="前のカードへ戻ったとき、そのカードを長めに表示します。自動再生は止まりません。"
+            />
+          </Group>
+
           <Group title="表示">
             <div className="kg-switch-row">
               <Switch

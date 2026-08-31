@@ -12,8 +12,10 @@ export function dwellMs(card: Pick<Card, 'width' | 'isSentenceEnd' | 'isParagrap
   return Math.max(180, (BASE + card.width + pause) * (60000 / cpm))
 }
 
-/** 戻ったカードは 3倍かつ最低 1.8 秒。倍率だけでは体感できない
- *  (元が ~500ms なので 1.6倍でも +300ms にしかならない)。 */
-export function reviewDwellMs(base: number): number {
-  return Math.max(1800, base * 3)
+/** 戻ったカードを長めに出す。倍率だけでは体感できない
+ *  (元が ~500ms なので 1.6倍でも +300ms にしかならない) ので、下限も効かせる。
+ *  strength 0 で無効、1 で既定 (3倍 / 最低 1.8 秒)、2 で倍。 */
+export function reviewDwellMs(base: number, strength = 1): number {
+  if (strength <= 0) return base
+  return Math.max(1800 * strength, base * (1 + 2 * strength))
 }

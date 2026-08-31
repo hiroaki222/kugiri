@@ -38,6 +38,9 @@ export type SeekCause = 'key-card' | 'key-sentence' | 'key-paragraph' | 'slider'
 export type Event =
   | { type: 'PLAY' }
   | { type: 'PAUSE_REQUEST' }
+  /** 設定を開いたときなど、ユーザーが「止めたい」と言ったわけではない停止。
+   *  PAUSE_REQUEST と違って文脈は出さない。 */
+  | { type: 'SUSPEND' }
   | { type: 'TIMER'; gen: number }
   | { type: 'SEEK'; target: number; cause: SeekCause; direction: -1 | 1 }
   | { type: 'HOLD_START' }
@@ -151,6 +154,9 @@ export function reduce(s: Playback, e: Event, deck: Deck): Playback {
           cur?.kind === 'summary' ? { mode: 'summary' } : { mode: 'context', by: 'paused' },
       }
     }
+
+    case 'SUSPEND':
+      return { ...bump(s), intent: 'paused', reviewing: false }
 
     case 'TIMER': {
       if (e.gen !== s.timerGen) return s // 古い世代は捨てる

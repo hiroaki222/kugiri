@@ -37,6 +37,13 @@ describe('基本', () => {
     expect(s.display).toEqual({ mode: 'context', by: 'paused' })
   })
 
+  it('SUSPEND は文脈を出さずに止める (設定を開いたとき)', () => {
+    const s = run([{ type: 'PLAY' }, { type: 'SUSPEND' }])
+    expect(s.intent).toBe('paused')
+    expect(s.display.mode).toBe('card') // PAUSE_REQUEST と違って文脈を出さない
+    expect(effectivePlaying(s)).toBe(false)
+  })
+
   it('末尾到達と Esc では文脈を出さない', () => {
     for (const type of ['REACHED_END', 'ESCAPE'] as const) {
       expect(run([{ type: 'PLAY' }, { type }]).display.mode).toBe('card')
