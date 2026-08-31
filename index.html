@@ -9,9 +9,66 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="preload" as="style" href="/fonts/noto-sans-jp.css" />
     <link rel="stylesheet" href="/fonts/noto-sans-jp.css" />
+    <script>
+      // Applies the saved background before the first paint. Waiting for the
+      // bundle would show a light ground to someone who reads on a dark one.
+      // The key and the dark list are repeated from src/lib/settings.ts because
+      // this has to run before any module is loaded.
+      try {
+        const saved = JSON.parse(localStorage.getItem('kugiri.settings') || '{}')
+        const bg = ['light', 'cream', 'navy', 'black'].includes(saved.bg) ? saved.bg : 'light'
+        const dark = bg === 'navy' || bg === 'black'
+        const el = document.documentElement
+        el.dataset.bg = bg
+        el.dataset.mode = dark ? 'dark' : 'light'
+        el.style.colorScheme = dark ? 'dark' : 'light'
+      } catch {}
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- Replaced the moment React mounts. Without it the ground sits empty for
+         as long as the bundle takes to arrive and parse, which reads as a page
+         that failed to load. Styled inline, and with the same tokens and bar as
+         the app, so the swap is not visible. -->
+    <div id="root">
+      <div style="display: flex; min-height: 100%; flex-direction: column">
+        <header
+          style="
+            display: flex;
+            flex: none;
+            align-items: baseline;
+            gap: 8px;
+            border-bottom: 1px solid var(--kg-hair);
+            background: var(--kg-panel);
+            padding: 15px 20px;
+          "
+        >
+          <b style="font-size: 15px">Kugiri</b>
+          <span
+            style="
+              font-size: 10.5px;
+              letter-spacing: 0.14em;
+              text-transform: uppercase;
+              color: var(--kg-muted);
+            "
+            >くぎり</span
+          >
+        </header>
+        <div style="display: grid; flex: 1; place-items: center">
+          <div
+            class="kg-indeterminate kg-boot"
+            style="
+              position: relative;
+              height: 3px;
+              width: min(260px, 60vw);
+              overflow: hidden;
+              border-radius: 999px;
+              background: color-mix(in srgb, var(--kg-mark) 14%, transparent);
+            "
+          ></div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
